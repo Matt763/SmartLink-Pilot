@@ -19,7 +19,7 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 }
 
 const milestones = [
-  { year: "2024", title: "Founded in Nairobi", desc: "SmartLink Pilot was born from a simple frustration — existing link tools were either too complex or too limited. We set out to build something better." },
+  { year: "2024", title: "Founded in Arusha", desc: "SmartLink Pilot was born from a simple frustration — existing link tools were either too complex or too limited. We set out to build something better." },
   { year: "Q2 2024", title: "First 1,000 Users", desc: "Word spread quickly. Within 3 months of launch, over 1,000 marketers and developers were trusting SmartLink Pilot for their campaigns." },
   { year: "Q3 2024", title: "Analytics Engine Launched", desc: "We shipped our real-time analytics dashboard, giving users country-level click data, device breakdowns, and referral tracking." },
   { year: "Q4 2024", title: "Pro & Enterprise Plans", desc: "Custom aliases, password-protected links, QR code generation, and team workspaces became available to Pro and Enterprise subscribers." },

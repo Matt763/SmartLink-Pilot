@@ -16,7 +16,7 @@ const team = [
     initials: "MM",
     image: "/team/mclean.png",
     gradient: "from-blue-500 to-purple-600",
-    bio: "Visionary full-stack engineer and serial entrepreneur based in Nairobi. Mclean built SmartLink Pilot after years of working with marketing teams who needed better link intelligence tools. He leads product strategy, engineering architecture, and business development.",
+    bio: "Visionary full-stack engineer and serial entrepreneur based in Arusha, Tanzania. Mclean built SmartLink Pilot after years of working with marketing teams who needed better link intelligence tools. He leads product strategy, engineering architecture, and business development.",
     expertise: ["Full-Stack Engineering", "SaaS Architecture", "Product Strategy", "Business Development"],
     social: { linkedin: "#", twitter: "#" },
     fact: "Built the first SmartLink prototype in a single weekend.",
