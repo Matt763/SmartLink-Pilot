@@ -38,6 +38,14 @@ next-env.d.ts
 
 # prisma local db
 prisma/dev.db
+dev.db
+
+# mobile / desktop build artifacts (not needed for web deployment)
+/ios
+/src-tauri/target
+/android/app/build
+/android/.gradle
+/android/local.properties
 
 # ide / tools
 /src/generated/prisma
