@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-
-export const dynamic = 'force-dynamic';
 import { ArrowRight, Calendar, User, Clock } from "lucide-react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { format } from "date-fns";
