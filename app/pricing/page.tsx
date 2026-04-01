@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Sparkles, Crown, Zap } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 const plans = [
   {
@@ -123,14 +124,14 @@ export default function PricingPage() {
 
         {/* Cards */}
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-start">
-          {plans.map((plan) => {
+          {plans.map((plan, idx) => {
             const Icon = plan.icon;
             return (
+              <ScrollReveal key={plan.name} delay={idx * 150}>
               <div
-                key={plan.name}
-                className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${
+                className={`relative rounded-2xl border overflow-hidden transition-all duration-300 h-full ${
                   plan.featured
-                    ? "bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-700 shadow-xl shadow-indigo-500/10 dark:shadow-indigo-500/5 md:scale-105 z-10"
+                    ? "bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-700 shadow-xl shadow-indigo-500/10 dark:shadow-indigo-500/5 md:-translate-y-4 md:scale-105 z-10"
                     : "bg-white/80 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 hover:shadow-lg"
                 }`}
               >
@@ -211,6 +212,7 @@ export default function PricingPage() {
                   </ul>
                 </div>
               </div>
+              </ScrollReveal>
             );
           })}
         </div>

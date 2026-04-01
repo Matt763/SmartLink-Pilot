@@ -1,28 +1,99 @@
+/* Premium Themed Responsive Scrollbars - Global Root */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: all 0.3s ease;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+  background-clip: content-box;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --primary: 243.9 76.1% 48.6%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262.1 83.3% 57.8%;
+    --radius: 0.5rem;
+    --plyr-color-main: #6366f1;
+  }
+
+  .dark {
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 263.4 70% 50.4%;
+  }
 }
 
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
-
-html {
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  overflow-x: hidden;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
 }
 
 @layer utilities {
@@ -30,10 +101,63 @@ body {
     text-wrap: balance;
   }
   .scrollbar-hide {
-    -ms-overflow-style: none;
     scrollbar-width: none;
+    -ms-overflow-style: none;
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Luxury Atmosphere Glows */
+  .glow-indigo {
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  }
+  .glow-purple {
+    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+  }
+}
+
+/* Premium Typography & Article Layer */
+.blog-content {
+    @apply antialiased tracking-tight;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.blog-content h2, .blog-content h3 {
+    @apply tracking-tighter font-extrabold text-gray-900 dark:text-white mt-16 mb-6;
+}
+
+.blog-content p {
+    @apply leading-[1.85] text-gray-700 dark:text-gray-300 mb-8 text-[1.125rem];
+}
+
+.blog-content blockquote {
+    @apply border-l-[6px] border-indigo-500 bg-indigo-500/5 py-8 px-10 rounded-2xl italic font-medium text-indigo-900 dark:text-indigo-200 shadow-xl my-12;
+}
+
+.blog-content code {
+    @apply px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 rounded-md font-mono text-[0.9em] border border-gray-200 dark:border-gray-700;
+}
+
+.blog-content pre {
+    @apply bg-[#0d0d0d] p-8 rounded-3xl border border-white/10 shadow-2xl my-12 font-mono text-sm leading-relaxed overflow-x-auto;
+}
+
+.blog-content img, .blog-content video, .blog-content .ql-video-wrapper {
+    @apply rounded-[2rem] shadow-2xl my-16 border border-gray-200 dark:border-white/10 transition-transform duration-700 hover:scale-[1.01];
+}
+
+.blog-content a {
+    @apply text-indigo-600 dark:text-indigo-400 font-bold underline decoration-2 decoration-indigo-500/30 underline-offset-4 hover:decoration-indigo-500 transition-all;
+}
+
+/* Atmospheric Plasma Bridge: Live Moving Effects */
+@keyframes plasma {
+    0% { background-position: 0% 50% }
+    50% { background-position: 100% 50% }
+    100% { background-position: 0% 50% }
+}
+
+.animate-plasma {
+    animation: plasma 15s ease infinite;
 }

@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     });
 
     const response = NextResponse.json({ 
-      shortUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/${shortCode}`,
+      shortUrl: `${process.env.NEXTAUTH_URL || 'https://www.smartlinkpilot.com'}/${shortCode}`,
       shortCode,
       originalUrl: newUrl.originalUrl
     }, { status: 201 });

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowRight, LinkIcon, BarChart2, ShieldCheck, Copy, Check, AlertCircle, Sparkles, Globe, Zap } from 'lucide-react';
+import { ArrowRight, LinkIcon, BarChart2, ShieldCheck, Copy, Check, AlertCircle, Sparkles, Globe, Zap, QrCode as QrCodeIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SpiderWeb } from '@/components/SpiderWeb';
+import { AdvancedQRCode } from '@/components/AdvancedQRCode';
 
 export default function LandingPage() {
   const [url, setUrl] = useState('');
@@ -12,6 +13,7 @@ export default function LandingPage() {
   const [limitReached, setLimitReached] = useState(false);
   const [history, setHistory] = useState<{original: string, short: string}[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
+  const [openQrIndex, setOpenQrIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('smartlink_history');
@@ -133,23 +135,39 @@ export default function LandingPage() {
             {history.length > 0 && (
               <div className="mt-6 text-left border-t border-gray-100 dark:border-gray-700 pt-6">
                 <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Your Recent Links</h4>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {history.map((item, idx) => (
-                    <li key={idx} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 transition">
-                      <span className="truncate text-gray-500 dark:text-gray-400 text-sm w-full sm:max-w-xs">{item.original}</span>
-                      <div className="flex items-center justify-end gap-3 mt-2 sm:mt-0 w-full sm:w-auto">
-                        <a href={item.short} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:text-purple-600 dark:hover:text-purple-400 truncate flex-1 text-right transition text-sm">
-                          {item.short}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(item.short)}
-                          className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg shadow-sm transition flex-shrink-0"
-                          title="Copy Link"
-                        >
-                          {copied === item.short ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                        </button>
+                    <li key={idx} className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 transition">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+                        <span className="truncate text-gray-500 dark:text-gray-400 text-sm w-full sm:max-w-[40%] text-left" title={item.original}>{item.original}</span>
+                        <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+                          <a href={item.short} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:text-purple-600 dark:hover:text-purple-400 truncate flex-1 text-right transition text-sm">
+                            {item.short}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setOpenQrIndex(openQrIndex === idx ? null : idx)}
+                            className="p-2.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-xl shadow-sm transition flex-shrink-0"
+                            title="Generate QR Code"
+                          >
+                            <QrCodeIcon size={14} className={openQrIndex === idx ? "text-purple-600 dark:text-purple-400" : ""} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(item.short)}
+                            className="p-2.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-xl shadow-sm transition flex-shrink-0"
+                            title="Copy Link"
+                          >
+                            {copied === item.short ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                          </button>
+                        </div>
                       </div>
+                      
+                      {openQrIndex === idx && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 flex justify-center animate-in slide-in-from-top-2">
+                           <AdvancedQRCode url={item.short} size={160} />
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -303,7 +321,7 @@ export default function LandingPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-950 dark:bg-black text-white border-t border-gray-800">
+      {false && <footer className="bg-gray-950 dark:bg-black text-white border-t border-gray-800">
         {/* Main Footer */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
@@ -397,7 +415,7 @@ export default function LandingPage() {
             <p className="text-gray-500 text-xs">Made With ❤️ By Mayobe Bros</p>
           </div>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

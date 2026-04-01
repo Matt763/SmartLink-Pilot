@@ -33,9 +33,10 @@ export function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {[
+              { label: "Features", href: "/features" },
               { label: "Pricing", href: "/pricing" },
               { label: "About", href: "/about" },
-              { label: "Team", href: "/team" },
+              { label: "Blog", href: "/blog" },
               { label: "Contact", href: "/contact" },
             ].map(link => (
               <Link key={link.href} href={link.href} className="px-3.5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -43,8 +44,12 @@ export function Navbar() {
               </Link>
             ))}
           </div>
+          {/* Download App button - desktop */}
+          <Link href="/download" className="hidden md:flex ml-1 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 18.5l-8-8m8 8l8-8M12 18.5V3" /></svg>
+            App
+          </Link>
 
-          {/* Right Side */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
             
@@ -81,34 +86,85 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 px-4 py-4 space-y-1 animate-in slide-in-from-top-2">
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer */}
+      <div 
+        className={`fixed top-0 right-0 h-screen w-[280px] bg-white dark:bg-gray-950 shadow-2xl border-l border-gray-100 dark:border-gray-800 z-50 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
+          mobileOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </div>
+            <span className="font-bold text-gray-900 dark:text-white">Pilot Navigation</span>
+          </div>
+          <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">Main Menu</p>
           {[
+            { label: "Features", href: "/features" },
             { label: "Pricing", href: "/pricing" },
             { label: "About", href: "/about" },
-            { label: "Team", href: "/team" },
-            { label: "Contact", href: "/contact" },
+            { label: "Blog", href: "/blog" },
+            { label: "Contact Us", href: "/contact" },
           ].map(link => (
-            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm flex-1 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition">
               {link.label}
             </Link>
           ))}
-          <hr className="border-gray-100 dark:border-gray-800 my-2" />
+          
+          <div className="my-6" />
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">App & Extras</p>
+          
+          <Link href="/download" onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-xl transition">
+            Download App
+          </Link>
+
+          <Link href="/sitemap" onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition mt-1">
+            Visual Sitemap
+          </Link>
+          
+          <div className="my-6 border-t border-gray-100 dark:border-gray-800 pt-6" />
+
           {session ? (
-            <>
-              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">Dashboard</Link>
-              {session?.user?.role === "admin" && <Link href="/admin" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition">Admin CMS</Link>}
-              <button onClick={() => signOut({ callbackUrl: "/" })} className="block w-full text-left px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">Sign Out</button>
-            </>
+            <div className="space-y-2">
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 rounded-xl transition shadow-md">
+                Go to Dashboard
+              </Link>
+              {session?.user?.role === "admin" && (
+                <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-xl transition">
+                  Admin CMS
+                </Link>
+              )}
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="w-full mt-4 text-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition">
+                Sign Out
+              </button>
+            </div>
           ) : (
-            <>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">Sign In</Link>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-center mt-2">Get Started Free</Link>
-            </>
+            <div className="space-y-3">
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition">
+                Sign In
+              </Link>
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg shadow-blue-500/25 transition">
+                Get Started Free
+              </Link>
+            </div>
           )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

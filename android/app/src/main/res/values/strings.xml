@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SmartLink Pilot</string>
+    <string name="title_activity_main">SmartLink Pilot</string>
+    <string name="package_name">com.mayobebros.smartlinkpilot</string>
+    <string name="custom_url_scheme">com.mayobebros.smartlinkpilot</string>
+</resources>

@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 
-const SYSTEM_PROMPT = `You are SmartLink Pilot's AI Customer Care Assistant. Your name is "Pilot Assistant".
+const SYSTEM_PROMPT_BASE = `You are SmartLink Pilot's AI Customer Care Assistant. Your name is "Pilot Assistant".
 
 You are professional, warm, helpful, and knowledgeable about the SmartLink Pilot platform. You speak in a friendly but professional tone.
 
@@ -42,9 +42,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    // Fetch available blog guides to act as a Knowledge Base wrapper
+    const blogs = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { title: true, slug: true, excerpt: true }
+    });
+    
+    const blogContext = blogs.map(b => `- "${b.title}": https://smartlinkpilot.com/blog/${b.slug}`).join("\n");
+
+    const dynamicSystemPrompt = `${SYSTEM_PROMPT_BASE}
+    
+AVAILABLE TROUBLESHOOTING GUIDES (CRITICAL):
+When a user asks how to do something, troubleshoot an error, or needs a guide, ALWAYS check the following list. If their problem matches one of these guides, give a brief 1-2 sentence solution and ALWAYS provide the exact hyperlink to the direct guide format EXACTLY like: [Read the full guide here](https://smartlinkpilot.com/blog/slug)
+
+Guides:
+${blogContext || "No guides available currently."}
+`;
+
     // Build conversation history
     const messages = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "system" as const, content: dynamicSystemPrompt },
       ...(history || []).slice(-10).map((m: any) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

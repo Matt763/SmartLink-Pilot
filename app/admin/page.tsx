@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Crown, Users, LinkIcon, Settings, Shield, DollarSign, FileText, PenTool, UserPlus, Mail, Lock, Trash2, Edit, ChevronDown, ChevronRight, Globe, BarChart2, Code, MessageCircle, Bell, Bot, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Crown, Users, Link as LinkIcon, Settings, Shield, DollarSign, FileText, PenTool, UserPlus, Mail, Lock, Trash2, Edit, ChevronDown, ChevronRight, Globe, BarChart2, Code, MessageCircle, Bell, Bot, CheckCircle, AlertCircle, Loader2, Smartphone, Save, RefreshCw, ExternalLink, Sparkles } from "lucide-react";
+import Link from "next/link";
 
-type Tab = "overview" | "users" | "links" | "team" | "site" | "monetization" | "chats" | "settings";
+type Tab = "overview" | "users" | "links" | "team" | "site" | "content" | "appconfig" | "monetization" | "chats" | "settings";
 
 function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t); }, [onClose]);
@@ -32,6 +33,75 @@ export default function AdminPage() {
   const [apiKeys, setApiKeys] = useState<Record<string, { masked: string; source: string }>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // === Page Content Editor State ===
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [pageContents, setPageContents] = useState<Record<string, string>>({});
+  const [contentSaving, setContentSaving] = useState(false);
+  const [contentLoading, setContentLoading] = useState(false);
+
+  const pageList = [
+    { key: "about",       label: "About Us",        href: "/about" },
+    { key: "team",        label: "Our Team",         href: "/team" },
+    { key: "contact",     label: "Contact",          href: "/contact" },
+    { key: "trust",       label: "Trust & E-E-A-T",  href: "/trust" },
+    { key: "privacy",     label: "Privacy Policy",   href: "/privacy" },
+    { key: "terms",       label: "Terms of Service", href: "/terms" },
+    { key: "cookies",     label: "Cookies Policy",   href: "/cookies" },
+    { key: "disclaimer",  label: "Disclaimer",       href: "/disclaimer" },
+  ];
+
+  const loadPageContent = useCallback(async (page: string) => {
+    setContentLoading(true);
+    try {
+      const res = await fetch(`/api/admin/content?page=${page}`);
+      const data = await res.json();
+      const map: Record<string, string> = {};
+      (data.entries || []).forEach((e: { section: string; content: string }) => { map[e.section] = e.content; });
+      setPageContents(map);
+    } finally { setContentLoading(false); }
+  }, []);
+
+  const savePageContent = async (section: string, content: string) => {
+    if (!selectedPage) return;
+    setContentSaving(true);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: selectedPage, section, content }),
+      });
+      if (res.ok) setToast({ message: `${section} saved!`, type: "success" });
+      else setToast({ message: "Save failed", type: "error" });
+    } finally { setContentSaving(false); }
+  };
+
+  // === App Config State ===
+  const [appConfig, setAppConfig] = useState<Record<string, string>>({
+    appName: "SmartLink Pilot", appTagline: "URL shortener for modern marketers",
+    supportEmail: "support@smartlinkpilot.com", officeLocation: "Arusha, Tanzania",
+    phone: "+254 700 000 000", playStoreUrl: "#", appStoreUrl: "#",
+    apkDownloadUrl: "/downloads/smartlink-pilot.apk", appVersion: "1.0.0", apkSize: "18 MB",
+    twitterUrl: "https://twitter.com/smartlinkpilot", linkedinUrl: "https://linkedin.com/company/smartlinkpilot",
+    githubUrl: "https://github.com/mayobe/smartlink",
+  });
+  const [appConfigSaving, setAppConfigSaving] = useState(false);
+
+  const loadAppConfig = useCallback(async () => {
+    try { const res = await fetch("/api/admin/app-config"); const data = await res.json(); if (data.config) setAppConfig(data.config); } catch {}
+  }, []);
+
+  const saveAppConfig = async () => {
+    setAppConfigSaving(true);
+    try {
+      const res = await fetch("/api/admin/app-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ updates: appConfig }) });
+      if (res.ok) setToast({ message: "App config saved!", type: "success" }); else setToast({ message: "Save failed", type: "error" });
+    } finally { setAppConfigSaving(false); }
+  };
+
+  useEffect(() => { if (activeTab === "appconfig") loadAppConfig(); }, [activeTab, loadAppConfig]);
+  useEffect(() => { if (selectedPage) loadPageContent(selectedPage); }, [selectedPage, loadPageContent]);
+
 
   // Load settings from API
   useEffect(() => {
@@ -122,14 +192,16 @@ export default function AdminPage() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
 
   const tabs: { key: Tab; icon: any; label: string }[] = [
-    { key: "overview", icon: BarChart2, label: "Overview" },
-    { key: "users", icon: Users, label: "Users" },
-    { key: "links", icon: LinkIcon, label: "Links" },
-    { key: "team", icon: UserPlus, label: "Team" },
-    { key: "site", icon: PenTool, label: "Site Editor" },
+    { key: "overview",   icon: BarChart2,    label: "Overview" },
+    { key: "users",      icon: Users,        label: "Users" },
+    { key: "links",      icon: LinkIcon,     label: "Links" },
+    { key: "team",       icon: UserPlus,     label: "Team" },
+    { key: "site",       icon: PenTool,      label: "Site Editor" },
+    { key: "content",    icon: FileText,     label: "Page Content" },
+    { key: "appconfig",  icon: Smartphone,   label: "App Config" },
     { key: "monetization", icon: DollarSign, label: "Monetization" },
-    { key: "chats", icon: MessageCircle, label: "Chats" },
-    { key: "settings", icon: Settings, label: "Settings" },
+    { key: "chats",      icon: MessageCircle,label: "Chats" },
+    { key: "settings",   icon: Settings,     label: "Settings" },
   ];
 
   const Spinner = () => <Loader2 size={14} className="animate-spin" />;
@@ -147,6 +219,9 @@ export default function AdminPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-500">Admin Dashboard</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">Full control over SmartLink Pilot</p>
           </div>
+          <Link href="/admin/blog" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition">
+            <Sparkles size={16} /> AI Blog CMS
+          </Link>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-500 text-white text-xs font-black rounded-lg shadow-md border border-amber-300/50 uppercase">
             <Crown size={12} /> CEO
           </span>
@@ -422,6 +497,160 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Page Content Editor Tab ─── */}
+        {activeTab === "content" && (
+          <div className="space-y-6">
+            {!selectedPage ? (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><FileText size={18} /> Page Content Editor</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Select a page to edit its content sections. Changes are saved to the database and take effect immediately without redeployment.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {pageList.map(page => (
+                    <button key={page.key} onClick={() => setSelectedPage(page.key)}
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 transition text-left">
+                      {page.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <button onClick={() => setSelectedPage(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mb-1 flex items-center gap-1">← Back to pages</button>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                      {pageList.find(p => p.key === selectedPage)?.label}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Add or override content sections. Leave blank to use the default built-in content.</p>
+                  </div>
+                  <a href={pageList.find(p => p.key === selectedPage)?.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                    <ExternalLink size={13} /> Preview page
+                  </a>
+                </div>
+
+                {contentLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="animate-spin text-gray-400" size={24} />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {[
+                      { key: "hero_title",       label: "Hero Title",           type: "input",    placeholder: "e.g. About SmartLink Pilot" },
+                      { key: "hero_subtitle",    label: "Hero Subtitle",        type: "input",    placeholder: "Short tagline below the hero title" },
+                      { key: "intro_paragraph",  label: "Introduction Paragraph",type: "textarea", placeholder: "Main introductory paragraph..." },
+                      { key: "body_text",        label: "Additional Body Text", type: "textarea", placeholder: "Extra paragraphs, details..." },
+                      { key: "cta_label",        label: "CTA Button Label",     type: "input",    placeholder: "e.g. Get Started Free" },
+                    ].map(field => (
+                      <div key={field.key}>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
+                        {field.type === "textarea" ? (
+                          <textarea rows={4} value={pageContents[field.key] ?? ""}
+                            onChange={e => setPageContents(prev => ({ ...prev, [field.key]: e.target.value }))}
+                            placeholder={field.placeholder}
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition resize-none placeholder-gray-400" />
+                        ) : (
+                          <input type="text" value={pageContents[field.key] ?? ""}
+                            onChange={e => setPageContents(prev => ({ ...prev, [field.key]: e.target.value }))}
+                            placeholder={field.placeholder}
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition placeholder-gray-400" />
+                        )}
+                        <div className="flex justify-end mt-1.5">
+                          <button disabled={contentSaving} onClick={() => savePageContent(field.key, pageContents[field.key] ?? "")}
+                            className="text-xs px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center gap-1.5">
+                            {contentSaving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />} Save
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── App Config Tab ─── */}
+        {activeTab === "appconfig" && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200/50 dark:border-blue-800/30 rounded-xl p-5">
+              <h3 className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-1"><Smartphone size={18} /> App & Site Configuration</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">Edit your app store links, branding, and contact info. Changes are saved to the database and override static defaults immediately.</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-4">Mobile App Links</h4>
+              <div className="space-y-4">
+                {([
+                  { key: "playStoreUrl",    label: "Google Play Store URL",   placeholder: "https://play.google.com/store/apps/details?id=..." },
+                  { key: "appStoreUrl",     label: "Apple App Store URL",      placeholder: "https://apps.apple.com/app/smartlink-pilot/id..." },
+                  { key: "apkDownloadUrl",  label: "Direct APK Download URL",  placeholder: "/downloads/smartlink-pilot.apk" },
+                  { key: "appVersion",      label: "App Version",             placeholder: "1.0.0" },
+                  { key: "apkSize",         label: "APK File Size",           placeholder: "18 MB" },
+                ] as const).map(field => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
+                    <input type="text" value={appConfig[field.key] ?? ""}
+                      onChange={e => setAppConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-4">Branding & Contact</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {([
+                  { key: "appName",       label: "Site / App Name",     placeholder: "SmartLink Pilot" },
+                  { key: "appTagline",    label: "Tagline",             placeholder: "URL shortener for modern marketers" },
+                  { key: "supportEmail",  label: "Support Email",       placeholder: "support@smartlinkpilot.com" },
+                  { key: "officeLocation",label: "Office Location",     placeholder: "Arusha, Tanzania" },
+                  { key: "phone",         label: "Phone Number",        placeholder: "+254 700 000 000" },
+                ] as const).map(field => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
+                    <input type="text" value={appConfig[field.key] ?? ""}
+                      onChange={e => setAppConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-4">Social Links</h4>
+              <div className="space-y-4">
+                {([
+                  { key: "twitterUrl",  label: "X / Twitter URL",  placeholder: "https://twitter.com/smartlinkpilot" },
+                  { key: "linkedinUrl", label: "LinkedIn URL",      placeholder: "https://linkedin.com/company/smartlinkpilot" },
+                  { key: "githubUrl",   label: "GitHub URL",        placeholder: "https://github.com/mayobe/smartlink" },
+                ] as const).map(field => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
+                    <input type="text" value={appConfig[field.key] ?? ""}
+                      onChange={e => setAppConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button disabled={appConfigSaving} onClick={saveAppConfig}
+                className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-50">
+                {appConfigSaving ? <><Loader2 size={15} className="animate-spin" /> Saving…</> : <><Save size={15} /> Save All Changes</>}
+              </button>
+              <button onClick={loadAppConfig} className="flex items-center gap-2 px-5 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm">
+                <RefreshCw size={14} /> Reload from DB
+              </button>
             </div>
           </div>
         )}

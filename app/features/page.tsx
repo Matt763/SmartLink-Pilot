@@ -1,4 +1,5 @@
 import { LinkIcon, BarChart2, ShieldCheck, QrCode, Clock, Lock, Globe, Zap, Users, Code, Webhook, Palette } from "lucide-react";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 const features = [
   {
@@ -44,21 +45,25 @@ export default function FeaturesPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-20 space-y-20">
-        {features.map((section) => (
-          <div key={section.category}>
+        {features.map((section, sIdx) => (
+          <ScrollReveal key={section.category} delay={sIdx * 100}>
+          <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">{section.category}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {section.items.map((item) => (
-                <div key={item.title} className="bg-white/60 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/40 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              {section.items.map((item, iIdx) => (
+                <ScrollReveal key={item.title} delay={iIdx * 100}>
+                <div className="bg-white/60 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/40 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full">
                   <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center mb-4">
                     <item.icon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{item.title}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{item.desc}</p>
                 </div>
+                </ScrollReveal>
               ))}
             </div>
           </div>
+          </ScrollReveal>
         ))}
       </div>
     </div>
