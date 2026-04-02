@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import dns from "dns";
 import { promisify } from "util";
+import { sendEmail, SENDERS } from "@/lib/resend";
+import { welcomeEmailTemplate } from "@/lib/email-templates";
 
 const resolveMx = promisify(dns.resolveMx);
 
@@ -108,6 +110,25 @@ export async function POST(req: Request) {
         role: email === CEO_EMAIL ? "admin" : "free_user",
       },
     });
+
+    // Send welcome email (fire-and-forget — don't block signup on email failure)
+    const { subject, html } = welcomeEmailTemplate(user.name ?? finalUsername, finalUsername);
+    sendEmail({
+      from: SENDERS.founder,
+      to: email,
+      subject,
+      html,
+      replyTo: "support@smartlinkpilot.com",
+    }).catch((err) => console.error("[Signup] Welcome email failed:", err));
+
+    // Auto-subscribe to newsletter (upsert so repeat signups don't error)
+    prisma.newsletterSubscriber
+      .upsert({
+        where: { email },
+        update: { subscribed: true, name: user.name ?? undefined },
+        create: { email, name: user.name ?? undefined },
+      })
+      .catch((err) => console.error("[Signup] Newsletter subscribe failed:", err));
 
     return NextResponse.json(
       { message: "Account created successfully", userId: user.id, username: finalUsername },

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, SENDERS } from "@/lib/resend";
+import { newsletterPostEmailTemplate } from "@/lib/email-templates";
 
 export async function POST(req: Request) {
   try {
@@ -29,17 +31,61 @@ export async function POST(req: Request) {
     };
 
     let post;
+    let wasJustPublished = false;
+
     if (id) {
-      // Update existing post
+      // Check previous state so we only send the newsletter once on first publish
+      const existing = await prisma.blogPost.findUnique({ where: { id }, select: { published: true } });
+      wasJustPublished = !existing?.published && postData.published === true;
+
       post = await prisma.blogPost.update({
         where: { id },
         data: postData
       });
     } else {
-      // Create new post
       post = await prisma.blogPost.create({
         data: postData
       });
+      wasJustPublished = postData.published === true;
+    }
+
+    // Send newsletter when a post is published for the first time
+    if (wasJustPublished) {
+      const wordCount = post.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
+      const readTime = Math.max(1, Math.ceil(wordCount / 200));
+
+      // Fire-and-forget — don't delay the API response
+      (async () => {
+        try {
+          const subscribers = await prisma.newsletterSubscriber.findMany({
+            where: { subscribed: true },
+            select: { email: true, name: true, token: true },
+          });
+
+          for (const subscriber of subscribers) {
+            const { subject, html } = newsletterPostEmailTemplate({
+              subscriberName: subscriber.name ?? undefined,
+              postTitle: post.title,
+              postExcerpt: post.excerpt,
+              postSlug: post.slug,
+              featuredImage: post.featuredImage,
+              readTime,
+              unsubscribeToken: subscriber.token,
+            });
+
+            await sendEmail({
+              from: SENDERS.info,
+              to: subscriber.email,
+              subject,
+              html,
+            });
+          }
+
+          console.log(`[Newsletter] Dispatched post "${post.title}" to ${subscribers.length} subscribers.`);
+        } catch (err) {
+          console.error("[Newsletter] Dispatch error:", err);
+        }
+      })();
     }
 
     return NextResponse.json(post);

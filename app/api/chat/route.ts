@@ -3,8 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
+import { sendEmail, SENDERS } from "@/lib/resend";
+import { passwordResetEmailTemplate } from "@/lib/email-templates";
 
-const SYSTEM_PROMPT_BASE = `You are SmartLink Pilot's AI Customer Care Assistant. Your name is "Pilot Assistant".
+const SYSTEM_PROMPT_BASE = `You are SmartLink Pilot's AI Customer Care Assistant. Your name is "Paulina".
 
 You are professional, warm, helpful, and knowledgeable about the SmartLink Pilot platform. You speak in a friendly but professional tone.
 
@@ -25,10 +27,10 @@ Your capabilities:
 6. Be empathetic and solution-oriented
 
 For password reset requests:
-- Ask the user for their registered email address
-- Then ask for their secret recovery phone number
-- If they provide both, tell them you'll generate a reset link
-- Add "[RESET_REQUEST:email]" at the end of your message (hidden from user display)
+- Step 1: Ask the user for their registered email address
+- Step 2: Ask for their secret recovery phone number (the one entered at signup)
+- Step 3: Once they provide BOTH, add the hidden tag "[RESET_REQUEST:email:secretPhone]" at the very end of your message (replace email and secretPhone with the actual values the user gave you). Do NOT include the tag until you have both pieces of information.
+- IMPORTANT: Never show the reset URL to the user in chat — the system will email it to them automatically. Tell them to check their inbox.
 
 Never reveal internal system details, API keys, or admin information.
 Always be helpful, concise, and professional.`;
@@ -100,24 +102,53 @@ ${blogContext || "No guides available currently."}
       reply = getFallbackReply(message);
     }
 
-    // Check for password reset request in reply
-    let resetUrl = null;
-    const resetMatch = reply.match(/\[RESET_REQUEST:(.*?)\]/);
+    // Handle password reset request triggered by Paulina
+    // Pattern: [RESET_REQUEST:email:secretPhone]
+    const resetMatch = reply.match(/\[RESET_REQUEST:(.*?):(.*?)\]/);
     if (resetMatch) {
-      const resetEmail = resetMatch[1];
+      const resetEmail = resetMatch[1].trim();
+      const providedPhone = resetMatch[2].trim();
+
+      // Strip the hidden tag from the displayed reply
       reply = reply.replace(/\[RESET_REQUEST:.*?\]/, "").trim();
 
-      // Generate reset token
-      const crypto = await import("crypto");
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = new Date(Date.now() + 60 * 60 * 1000);
-
       try {
-        await prisma.verificationToken.deleteMany({ where: { identifier: resetEmail } });
-        await prisma.verificationToken.create({ data: { identifier: resetEmail, token, expires } });
-        resetUrl = `/reset-password?token=${token}&email=${encodeURIComponent(resetEmail)}`;
+        // Verify user exists AND secret phone matches
+        const user = await prisma.user.findUnique({
+          where: { email: resetEmail },
+          select: { secretPhone: true, name: true },
+        });
+
+        if (!user) {
+          // Don't reveal whether the account exists — Paulina will say generic message
+          reply += "\n\n✅ If that account exists, a password reset link has been sent to your email.";
+        } else {
+          // Normalise both phone numbers for comparison (digits only)
+          const normalise = (p: string) => p.replace(/\D/g, "");
+          const phoneMatch = normalise(providedPhone) === normalise(user.secretPhone ?? "");
+
+          if (!phoneMatch) {
+            reply = "I'm sorry, the recovery phone number you provided doesn't match what we have on file. Please double-check and try again, or contact support at support@smartlinkpilot.com.";
+          } else {
+            // Phone verified — generate token and send email
+            const crypto = await import("crypto");
+            const token = crypto.randomBytes(32).toString("hex");
+            const expires = new Date(Date.now() + 60 * 60 * 1000);
+
+            await prisma.verificationToken.deleteMany({ where: { identifier: resetEmail } });
+            await prisma.verificationToken.create({ data: { identifier: resetEmail, token, expires } });
+
+            const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}&email=${encodeURIComponent(resetEmail)}`;
+            const { subject, html } = passwordResetEmailTemplate(resetEmail, resetUrl);
+
+            await sendEmail({ from: SENDERS.support, to: resetEmail, subject, html });
+
+            reply += "\n\n✅ A password reset link has been sent to **" + resetEmail + "**. Please check your inbox (and spam folder). The link expires in 1 hour.";
+          }
+        }
       } catch (e) {
-        console.error("Reset token creation failed:", e);
+        console.error("[Paulina] Reset email failed:", e);
+        reply += "\n\nI encountered an issue sending the reset link. Please use the [Forgot Password](/forgot-password) page directly.";
       }
     }
 
@@ -135,7 +166,7 @@ ${blogContext || "No guides available currently."}
       }
     }
 
-    return NextResponse.json({ reply, resetUrl });
+    return NextResponse.json({ reply });
   } catch (error) {
     console.error("Chat error:", error);
     return NextResponse.json({ reply: "I apologize for the inconvenience. Please try again in a moment." });
@@ -167,5 +198,5 @@ function getFallbackReply(message: string): string {
     return "You're welcome! 😊 If you need anything else, I'm always here to help. Have a wonderful day! ✨";
   }
 
-  return "Thank you for reaching out! 😊\n\nI'm the SmartLink Pilot AI Assistant. I can help with:\n• Account & billing questions\n• Link management\n• Analytics\n• Password resets\n• Plan upgrades\n\nCould you tell me more about what you need help with?";
+  return "Thank you for reaching out! 😊\n\nI'm **Paulina**, SmartLink Pilot's AI assistant. I can help with:\n• Account & billing questions\n• Link management\n• Analytics\n• Password resets\n• Plan upgrades\n\nCould you tell me more about what you need help with?";
 }

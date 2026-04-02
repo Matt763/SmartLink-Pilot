@@ -232,6 +232,17 @@ model PageView {
   @@index([createdAt])
 }
 
+/// Newsletter subscribers (registered users + anonymous opt-ins)
+model NewsletterSubscriber {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  subscribed  Boolean  @default(true)
+  token       String   @unique @default(cuid()) // used for unsubscribe links
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 /// Stores published articles for the AI-driven blog engine
 model BlogPost {
   id             String   @id @default(cuid())

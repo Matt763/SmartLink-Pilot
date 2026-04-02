@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, User, ExternalLink } from "lucide-react";
+import { X, Send, User } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  resetUrl?: string;
 }
 
 const GREETING_MSGS = [
@@ -107,7 +106,7 @@ export default function ChatWidget() {
         body: JSON.stringify({ message: userMsg, history: messages.slice(-8) }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply, resetUrl: data.resetUrl }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I'm having trouble connecting. Please try again." }]);
     }
@@ -190,11 +189,6 @@ export default function ChatWidget() {
                     : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm shadow-sm"
                 }`}>
                   <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-                  {msg.resetUrl && (
-                    <a href={msg.resetUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-lg border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition">
-                      <ExternalLink size={11} /> Reset Password
-                    </a>
-                  )}
                 </div>
                 {msg.role === "user" && (
                   <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
