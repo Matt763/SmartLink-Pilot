@@ -28,18 +28,33 @@ export const metadata: Metadata = {
     "url shortener", "link shortener", "link analytics", "branded links",
     "custom short links", "qr code generator", "link management", "smartlink pilot",
   ],
-  authors: [{ name: "Mayobe Bros", url: "https://smartlinkpilot.com" }],
+  authors: [{ name: "Mayobe Bros", url: "https://www.smartlinkpilot.com" }],
   creator: "Mayobe Bros",
-  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://smartlinkpilot.com"),
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://www.smartlinkpilot.com"),
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon-32x32.png",
+  },
+  manifest: "/manifest.json",
   openGraph: {
     type: "website",
     siteName: "SmartLink Pilot",
     title: "SmartLink Pilot — URL Shortener & Link Analytics",
     description: "Shorten, brand, and analyze your links with enterprise-grade tools. Trusted by 12,000+ marketers worldwide.",
+    images: [{ url: "/og-image.png", width: 1200, height: 1200 }],
   },
   twitter: {
     card: "summary_large_image",
     site: "@smartlinkpilot",
+    images: ["/og-image.png"],
   },
   robots: { index: true, follow: true },
 };
