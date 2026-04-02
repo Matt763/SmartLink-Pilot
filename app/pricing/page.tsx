@@ -91,16 +91,16 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const subscribe = async (priceId: string, planName: string) => {
+  const subscribe = async (planName: string) => {
     if (!session) {
       window.location.href = "/login";
       return;
     }
-    setLoading(priceId);
+    setLoading(planName);
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId, planName }),
+      body: JSON.stringify({ planName }),
     });
     const data = await res.json();
     if (data.url) {
@@ -178,8 +178,8 @@ export default function PricingPage() {
 
                   {/* CTA */}
                   <button
-                    onClick={() => plan.priceId && subscribe(plan.priceId, (plan as any).planName || "pro")}
-                    disabled={plan.ctaDisabled || loading === plan.priceId}
+                    onClick={() => (plan as any).planName && subscribe((plan as any).planName)}
+                    disabled={plan.ctaDisabled || loading === (plan as any).planName}
                     className={`w-full py-3 px-4 rounded-xl text-sm font-semibold transition-all mb-8 ${
                       plan.featured
                         ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02]"
@@ -188,7 +188,7 @@ export default function PricingPage() {
                           : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    {loading === plan.priceId ? "Processing..." : plan.cta}
+                    {loading === (plan as any).planName ? "Processing..." : plan.cta}
                   </button>
 
                   {/* Features */}

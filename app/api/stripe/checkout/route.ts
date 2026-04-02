@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { initializePayment } from "@/lib/flutterwave";
 
-// Map plan names to env-var price IDs
-const PRICE_IDS: Record<string, string | undefined> = {
-  pro: process.env.STRIPE_PRO_PRICE_ID,
-  enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID,
+const PLAN_CONFIG: Record<
+  string,
+  { amount: number; planId: string | undefined; description: string }
+> = {
+  pro: {
+    amount: 6.99,
+    planId: process.env.FLUTTERWAVE_PRO_PLAN_ID,
+    description: "SmartLink Pilot Pro — Unlimited links, analytics & QR codes",
+  },
+  enterprise: {
+    amount: 12.99,
+    planId: process.env.FLUTTERWAVE_ENTERPRISE_PLAN_ID,
+    description: "SmartLink Pilot Enterprise — Full API, team workspaces & more",
+  },
 };
 
 export async function POST(req: Request) {
@@ -17,68 +27,56 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { priceId, planName } = await req.json();
+    const { planName } = await req.json();
+    const plan = PLAN_CONFIG[planName as string] || PLAN_CONFIG.pro;
+    const resolvedPlanName = PLAN_CONFIG[planName as string] ? planName : "pro";
 
-    // Resolve the actual Stripe price ID
-    const resolvedPriceId =
-      (planName && PRICE_IDS[planName as string]) || priceId;
-
-    // Fall back to mock checkout if Stripe is not configured
-    const stripeKey = process.env.STRIPE_SECRET_KEY || "";
-    if (
-      !stripeKey ||
-      stripeKey === "sk_test_dummy" ||
-      !resolvedPriceId ||
-      resolvedPriceId.startsWith("price_pro") ||
-      resolvedPriceId.startsWith("price_enterprise")
-    ) {
-      return NextResponse.json({ url: `/mock-checkout?plan=${planName || "pro"}` });
-    }
-
-    let subscription = await prisma.subscription.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    let customerId = subscription?.stripeCustomerId;
-
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: session.user.email,
-        name: session.user.name || undefined,
-        metadata: { userId: session.user.id },
-      });
-      customerId = customer.id;
-
-      await prisma.subscription.upsert({
-        where: { userId: session.user.id },
-        create: { userId: session.user.id, stripeCustomerId: customerId },
-        update: { stripeCustomerId: customerId },
+    // Fall back to mock checkout when Flutterwave is not configured
+    if (!process.env.FLUTTERWAVE_SECRET_KEY) {
+      return NextResponse.json({
+        url: `/mock-checkout?plan=${resolvedPlanName}`,
       });
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: "subscription",
-      // card includes Google Pay & Apple Pay automatically in Stripe Checkout
-      payment_method_types: ["card"],
-      line_items: [{ price: resolvedPriceId, quantity: 1 }],
-      success_url: `${process.env.NEXTAUTH_URL}/dashboard?upgrade=success&plan=${planName || "pro"}`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/pricing`,
-      subscription_data: {
-        metadata: {
-          userId: session.user.id,
-          planName: planName || "pro",
-        },
-      },
-      metadata: {
+    const txRef = `slp_${session.user.id}_${Date.now()}`;
+
+    const result = await initializePayment({
+      txRef,
+      amount: plan.amount,
+      currency: "USD",
+      email: session.user.email,
+      name: session.user.name || session.user.email,
+      planId: plan.planId,
+      redirectUrl: `${process.env.NEXTAUTH_URL}/api/payment/verify`,
+      meta: {
         userId: session.user.id,
-        planName: planName || "pro",
+        planName: resolvedPlanName,
+        txRef,
       },
+      description: plan.description,
     });
 
-    return NextResponse.json({ url: checkoutSession.url });
+    if (result.status !== "success" || !result.data?.link) {
+      console.error("Flutterwave init error:", result);
+      return NextResponse.json(
+        { error: result.message || "Could not create payment link" },
+        { status: 500 }
+      );
+    }
+
+    // Save pending subscription record
+    await prisma.subscription.upsert({
+      where: { userId: session.user.id },
+      create: { userId: session.user.id, status: "pending" },
+      update: { status: "pending" },
+    });
+
+    return NextResponse.json({ url: result.data.link });
   } catch (error: any) {
-    console.error("Stripe Checkout Error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    console.error("Checkout Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
