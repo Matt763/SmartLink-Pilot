@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyTransaction } from "@/lib/flutterwave";
+import { getToken, getTransactionStatus } from "@/lib/pesapal";
 
 const ROLE_MAP: Record<string, string> = {
   pro: "premium_user",
@@ -13,59 +13,60 @@ function nextPeriodEnd(): Date {
   return d;
 }
 
+/**
+ * Pesapal redirects here after payment with query params:
+ *   OrderTrackingId, OrderMerchantReference, OrderNotificationType
+ */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-  const txId = searchParams.get("transaction_id");
-  const txRef = searchParams.get("tx_ref");
-
+  const trackingId = searchParams.get("OrderTrackingId");
+  const merchantRef = searchParams.get("OrderMerchantReference"); // our orderId
   const base = process.env.NEXTAUTH_URL || "https://www.smartlinkpilot.com";
 
-  // Cancelled by user
-  if (status === "cancelled" || !txId) {
+  if (!trackingId) {
     return NextResponse.redirect(`${base}/pricing?cancelled=1`);
   }
 
   try {
-    const result = await verifyTransaction(txId);
+    const token = await getToken();
+    const status = await getTransactionStatus(token, trackingId);
 
+    // Pesapal payment_status_description: "Completed" on success
     if (
-      result.status !== "success" ||
-      result.data?.status !== "successful"
+      status.payment_status_description !== "Completed" &&
+      status.status_code !== 1
     ) {
-      console.error("Payment verification failed:", result);
+      console.error("Payment not completed:", status);
       return NextResponse.redirect(`${base}/pricing?error=payment_failed`);
     }
 
-    const meta = result.data?.meta as Record<string, string> | undefined;
-    const userId = meta?.userId;
-    const planName = meta?.planName || "pro";
+    // Decode planName and userId from merchantRef: "slp-{plan}-{userId}"
+    const parts = (merchantRef || "").split("-");
+    // Format: slp - pro - cuid (cuid has no hyphens in the middle for our format)
+    // parts[0] = "slp", parts[1] = planName, parts[2..] = userId
+    const planName = parts[1] || "pro";
+    const userId = parts.slice(2).join("-"); // rejoin in case userId had hyphens
 
     if (!userId) {
-      console.error("No userId in Flutterwave meta:", meta);
+      console.error("Could not extract userId from ref:", merchantRef);
       return NextResponse.redirect(`${base}/pricing?error=no_user`);
     }
 
     const role = ROLE_MAP[planName] || "premium_user";
 
-    // Update user role
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role },
-    });
+    await prisma.user.update({ where: { id: userId }, data: { role } });
 
-    // Update subscription record
     await prisma.subscription.upsert({
       where: { userId },
       create: {
         userId,
-        stripeSubscriptionId: txId, // store Flutterwave tx ID
+        stripeSubscriptionId: trackingId,
         stripePriceId: planName,
         stripeCurrentPeriodEnd: nextPeriodEnd(),
         status: "active",
       },
       update: {
-        stripeSubscriptionId: txId,
+        stripeSubscriptionId: trackingId,
         stripePriceId: planName,
         stripeCurrentPeriodEnd: nextPeriodEnd(),
         status: "active",
