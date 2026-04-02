@@ -1,45 +1,38 @@
-import { prisma } from '@/lib/prisma'
-import { MetadataRoute } from 'next'
+import { prisma } from "@/lib/prisma";
+import { MetadataRoute } from "next";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://smartlink-pilot.com'
-  
-  const routes = [
-    '',
-    '/features',
-    '/pricing',
-    '/about',
-    '/team',
-    '/contact',
-    '/trust',
-    '/download',
-    '/privacy',
-    '/terms',
-    '/cookies',
-    '/disclaimer',
-    '/blog',
+  const BASE = process.env.NEXTAUTH_URL || "https://www.smartlinkpilot.com";
+
+  const staticRoutes: MetadataRoute.Sitemap = [
+    { url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
+    { url: `${BASE}/features`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/pricing`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/team`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/download`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/trust`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
+    { url: `${BASE}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/cookies`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/disclaimer`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  // Fetch all published articles for SEO Indexing
   const posts = await prisma.blogPost.findMany({
     where: { published: true },
-    select: { slug: true, updatedAt: true }
+    select: { slug: true, updatedAt: true, createdAt: true },
+    orderBy: { updatedAt: "desc" },
   });
 
-  const staticRoutes = routes.map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date(),
-    changeFrequency: route === '' ? 'weekly' as const : 'monthly' as const,
-    priority: route === '' ? 1 : 0.8,
-  }));
-
-  const blogRoutes = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
+  const blogRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${BASE}/blog/${post.slug}`,
     lastModified: post.updatedAt,
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
+    changeFrequency: "monthly",
+    priority: 0.75,
   }));
 
   return [...staticRoutes, ...blogRoutes];

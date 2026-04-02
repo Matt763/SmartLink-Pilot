@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, ExternalLink } from "lucide-react";
+import { MessageCircle, X, Send, User, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,7 +15,7 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! 👋 I'm your **Pilot Assistant**. How can I help you today?\n\n• Link management\n• Account help\n• Password reset\n• Plan upgrades",
+      content: "Hi there! 👋 I'm **Paulina**, your SmartLink Pilot assistant. How can I help you today?\n\n• Link shortening & management\n• Account & billing help\n• Password reset\n• Plan upgrades",
     },
   ]);
   const [input, setInput] = useState("");
@@ -64,8 +65,11 @@ export default function ChatWidget() {
 
   const formatMessage = (text: string) => {
     return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-400 underline hover:text-blue-300">$1</a>')
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" class="text-blue-400 underline hover:text-blue-300">$1</a>'
+      )
       .replace(/\n/g, "<br/>");
   };
 
@@ -76,14 +80,26 @@ export default function ChatWidget() {
         onClick={() => setOpen(!open)}
         className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 ${
           open
-            ? "bg-gray-700 hover:bg-gray-600 rotate-0"
+            ? "bg-gray-700 hover:bg-gray-600"
             : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/40"
         }`}
-        aria-label="Chat support"
+        aria-label="Chat with Paulina"
       >
-        {open ? <X className="w-6 h-6 text-white" /> : <MessageCircle className="w-6 h-6 text-white" />}
+        {open ? (
+          <X className="w-6 h-6 text-white" />
+        ) : (
+          <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
+            <Image
+              src="/paulina-assistant.jpg"
+              alt="Paulina — SmartLink Pilot Assistant"
+              fill
+              className="object-cover"
+              sizes="40px"
+            />
+          </div>
+        )}
         {!open && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></span>
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse" />
         )}
       </button>
 
@@ -91,18 +107,28 @@ export default function ChatWidget() {
       {open && (
         <div className="fixed bottom-24 right-2 left-2 sm:left-auto sm:right-6 z-50 sm:w-[380px] max-h-[calc(100dvh-120px)] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl shadow-black/20 border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30 flex-shrink-0">
+              <Image
+                src="/paulina-assistant.jpg"
+                alt="Paulina"
+                fill
+                className="object-cover"
+                sizes="40px"
+              />
             </div>
-            <div className="flex-1">
-              <h3 className="text-white text-sm font-bold">Pilot Assistant</h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white text-sm font-bold">Paulina</h3>
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-white/70 text-[10px]">Online • Replies instantly</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-white/70 text-[10px]">Online · SmartLink Pilot Support</span>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/50 hover:text-white transition p-1">
+            <button
+              onClick={() => setOpen(false)}
+              className="text-white/50 hover:text-white transition p-1 flex-shrink-0"
+              aria-label="Close chat"
+            >
               <X size={16} />
             </button>
           </div>
@@ -110,17 +136,28 @@ export default function ChatWidget() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[180px] bg-gray-50 dark:bg-gray-950">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={i}
+                className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 {msg.role === "assistant" && (
-                  <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Bot className="w-3.5 h-3.5 text-white" />
+                  <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-0.5">
+                    <Image
+                      src="/paulina-assistant.jpg"
+                      alt="Paulina"
+                      fill
+                      className="object-cover"
+                      sizes="28px"
+                    />
                   </div>
                 )}
-                <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-md shadow-sm"
-                }`}>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md"
+                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-md shadow-sm"
+                  }`}
+                >
                   <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                   {msg.resetUrl && (
                     <a
@@ -140,16 +177,17 @@ export default function ChatWidget() {
                 )}
               </div>
             ))}
+
             {loading && (
               <div className="flex gap-2 justify-start">
-                <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-3.5 h-3.5 text-white" />
+                <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+                  <Image src="/paulina-assistant.jpg" alt="Paulina" fill className="object-cover" sizes="28px" />
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 border border-gray-100 dark:border-gray-700 shadow-sm">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -158,12 +196,15 @@ export default function ChatWidget() {
           </div>
 
           {/* Input */}
-          <form onSubmit={sendMessage} className="px-3 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <form
+            onSubmit={sendMessage}
+            className="px-3 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
+          >
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Type your message..."
+                placeholder="Ask Paulina anything…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
@@ -177,7 +218,7 @@ export default function ChatWidget() {
                 <Send size={16} />
               </button>
             </div>
-            <p className="text-[9px] text-gray-400 text-center mt-1.5">Powered by SmartLink Pilot AI</p>
+            <p className="text-[9px] text-gray-400 text-center mt-1.5">Powered by SmartLink Pilot</p>
           </form>
         </div>
       )}
