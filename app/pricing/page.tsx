@@ -42,6 +42,7 @@ const plans = [
     cta: "Upgrade to Pro",
     ctaDisabled: false,
     priceId: "price_pro_monthly",
+    planName: "pro",
     features: [
       "Unlimited short links",
       "Custom URL aliases",
@@ -69,6 +70,7 @@ const plans = [
     cta: "Go Enterprise",
     ctaDisabled: false,
     priceId: "price_enterprise_monthly",
+    planName: "enterprise",
     features: [
       "Everything in Pro",
       "Full API access (10,000 req/day)",
@@ -89,7 +91,7 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const subscribe = async (priceId: string) => {
+  const subscribe = async (priceId: string, planName: string) => {
     if (!session) {
       window.location.href = "/login";
       return;
@@ -98,13 +100,13 @@ export default function PricingPage() {
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ priceId, planName }),
     });
     const data = await res.json();
     if (data.url) {
       window.location.href = data.url;
     } else {
-      alert("Error initiating checkout");
+      alert("Error initiating checkout. Please try again.");
       setLoading(null);
     }
   };
@@ -176,7 +178,7 @@ export default function PricingPage() {
 
                   {/* CTA */}
                   <button
-                    onClick={() => plan.priceId && subscribe(plan.priceId)}
+                    onClick={() => plan.priceId && subscribe(plan.priceId, (plan as any).planName || "pro")}
                     disabled={plan.ctaDisabled || loading === plan.priceId}
                     className={`w-full py-3 px-4 rounded-xl text-sm font-semibold transition-all mb-8 ${
                       plan.featured

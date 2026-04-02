@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     siteName: "SmartLink Pilot",
     title: "SmartLink Pilot — URL Shortener & Link Analytics",
     description: "Shorten, brand, and analyze your links with enterprise-grade tools. Trusted by 12,000+ marketers worldwide.",
-    images: [{ url: "/og-image.png", width: 1200, height: 1200 }],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "SmartLink Pilot — URL Shortener & Link Analytics" }],
   },
   twitter: {
     card: "summary_large_image",

@@ -13,6 +13,13 @@ function SubscriptionBadge({ role }: { role?: string }) {
       </span>
     );
   }
+  if (role === "enterprise_user") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-500 text-white text-xs font-bold rounded-lg tracking-wide shadow-md shadow-amber-500/25">
+        <Crown size={12} /> Enterprise
+      </span>
+    );
+  }
   if (role === "premium_user") {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold rounded-lg tracking-wide shadow-md shadow-indigo-500/25">
@@ -47,6 +54,15 @@ const tierFeatures = {
     maxLinks: Infinity,
     analyticsHistory: "90 days",
   },
+  enterprise_user: {
+    customAliases: true,
+    qrCode: true,
+    passwordProtection: true,
+    linkExpiration: true,
+    apiAccess: true,
+    maxLinks: Infinity,
+    analyticsHistory: "Unlimited",
+  },
   admin: {
     customAliases: true,
     qrCode: true,
@@ -62,8 +78,8 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const role = (session?.user?.role as string) || "free_user";
   const features = tierFeatures[role as keyof typeof tierFeatures] || tierFeatures.free_user;
-  const isEnterprise = role === "admin";
-  const isPro = role === "premium_user" || role === "admin";
+  const isEnterprise = role === "enterprise_user" || role === "admin";
+  const isPro = role === "premium_user" || role === "enterprise_user" || role === "admin";
 
   const [urls, setUrls] = useState<any[]>([]);
   const [originalUrl, setOriginalUrl] = useState("");
