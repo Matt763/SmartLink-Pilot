@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const cookieTypes = [
   { icon: Shield, title: "Essential Cookies", desc: "Required for core authentication, security, and service functionality. These cannot be disabled without breaking the Service.", color: "blue", required: true },
   { icon: Settings, title: "Functional Cookies", desc: "Remember your preferences such as theme mode (dark/light) and language settings. Disabling these will reset preferences on each visit.", color: "purple", required: false },
-  { icon: BarChart2, title: "Analytics Cookies", desc: "Help us understand which features are used most often so we can improve the platform. These are internal analytics only — no third-party trackers.", color: "green", required: false },
+  { icon: BarChart2, title: "Analytics Cookies", desc: "A random visitor session ID (slp_vsid) stored in sessionStorage to track anonymous page views, time on site, device type, country, and traffic source for our internal platform analytics. No personal data is stored.", color: "green", required: false },
   { icon: Cookie, title: "Device Identifier", desc: "An anonymous UUID stored in an HTTP-only cookie to enforce free trial limits for unauthenticated users. Contains no personal information.", color: "amber", required: false },
 ];
 
@@ -20,8 +20,10 @@ const cookieTable = [
   { name: "next-auth.csrf-token", purpose: "Security token that prevents cross-site request forgery attacks", duration: "Session", type: "Essential", typeColor: "blue" },
   { name: "next-auth.callback-url", purpose: "Stores the page to redirect to after successful login", duration: "Session", type: "Essential", typeColor: "blue" },
   { name: "device_id", purpose: "Anonymous random UUID used to track free trial link usage (no PII)", duration: "1 year", type: "Device", typeColor: "amber" },
+  { name: "slp_vsid", purpose: "Random visitor session ID stored in sessionStorage for internal analytics (device, country, pages visited, time spent). Cleared when browser tab is closed. Contains no personal data.", duration: "Session", type: "Analytics", typeColor: "green" },
   { name: "smartlink-theme", purpose: "Stores your chosen theme preference (dark/light mode) in localStorage", duration: "Persistent", type: "Functional", typeColor: "purple" },
   { name: "__Secure-next-auth.session-token", purpose: "Secure version of session token used in production HTTPS environments", duration: "30 days", type: "Essential", typeColor: "blue" },
+  { name: "Google AdSense cookies", purpose: "Served only to free-tier users. Google may place cookies (e.g., IDE, DSID) for ad personalization and measurement. Paid subscribers are not served ads and these cookies are not set for them.", duration: "Up to 13 months", type: "Advertising", typeColor: "amber" },
 ];
 
 const typeBg: Record<string, string> = {
@@ -53,7 +55,7 @@ export default function CookiesPolicyPage() {
       <div className="bg-gradient-to-br from-blue-600 to-purple-700 dark:from-blue-800 dark:to-purple-900 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">Cookies Policy</h1>
-          <p className="text-blue-100 mb-2">Last updated: March 31, 2026</p>
+          <p className="text-blue-100 mb-2">Last updated: April 2, 2026</p>
           <p className="text-blue-200 text-sm max-w-xl mx-auto">We only use cookies that are necessary to provide our service. No advertising trackers. No third-party profiling.</p>
         </div>
       </div>
@@ -127,7 +129,7 @@ export default function CookiesPolicyPage() {
           </div>
           <div className="mt-4 flex items-start gap-2.5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4">
             <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">We do not use Google Analytics, Facebook Pixel, or any advertising/retargeting cookies. No third-party companies can track you through our platform.</p>
+            <p className="text-sm text-blue-700 dark:text-blue-300">We do not use Google Analytics or Facebook Pixel. We use our own internal visitor analytics system. Free-tier users may see Google AdSense ads; Google may use cookies for ad serving. Paid subscribers (Pro &amp; Enterprise) are completely ad-free — no AdSense cookies are set for their sessions.</p>
           </div>
         </section>
         </ScrollReveal>
@@ -159,6 +161,8 @@ export default function CookiesPolicyPage() {
               { title: "Essential Cookies — Legitimate Interest", desc: "Essential cookies are required to provide the service you have requested. We do not require consent for these cookies as they are necessary for the website to function." },
               { title: "Functional Cookies — Legitimate Interest", desc: "Functional cookies improve your experience by remembering your preferences. We use legitimate interest as the legal basis; you can opt out by clearing your browser data." },
               { title: "Device Identifier — Legitimate Interest", desc: "The anonymous device_id cookie is used to enforce our free trial limits, which is a legitimate business interest. It contains no personally identifiable information." },
+              { title: "Visitor Analytics (slp_vsid) — Legitimate Interest", desc: "The slp_vsid session identifier is stored in sessionStorage (not a cookie) and is used for our internal visitor analytics. It contains no personally identifiable information and is automatically cleared when you close the browser tab." },
+              { title: "Google AdSense (Free Users Only) — Consent / Legitimate Interest", desc: "Google AdSense cookies are placed only for free-tier users to support the free plan through advertising revenue. Paid subscribers are exempt from all advertising cookies. Free users may opt out of personalized ads at g.co/adsettings." },
             ].map((item) => (
               <div key={item.title} className="flex items-start gap-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-xl p-4">
                 <CheckCircle size={16} className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />

@@ -24,6 +24,7 @@ const plans = [
       "7-day analytics history",
     ],
     excluded: [
+      "Ad-free experience (ads shown on free plan)",
       "Custom URL aliases",
       "QR code generator",
       "Password-protected links",
@@ -45,6 +46,7 @@ const plans = [
     planName: "pro",
     features: [
       "Unlimited short links",
+      "Ad-free experience",
       "Custom URL aliases",
       "Advanced analytics (geo, device, referrer)",
       "QR code generator",
@@ -73,6 +75,7 @@ const plans = [
     planName: "enterprise",
     features: [
       "Everything in Pro",
+      "Ad-free experience",
       "Full API access (10,000 req/day)",
       "Team workspaces (up to 10 members)",
       "Branded link domains",
@@ -224,6 +227,8 @@ export default function PricingPage() {
           <p className="text-sm text-gray-400 dark:text-gray-500">
             All plans include SSL encryption, 99.99% uptime SLA, and GDPR compliance.
             <br />
+            Free accounts display ads to support the platform. Pro &amp; Enterprise accounts are completely ad-free.
+            <br className="mt-1" />
             Questions? <a href="/contact" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">Contact our team</a>.
           </p>
         </div>

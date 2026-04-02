@@ -35,11 +35,19 @@ const sections = [
       },
       {
         title: "2.4 Payment Information",
-        content: "SmartLink Pilot uses Stripe for payment processing. We do not store your credit card numbers, CVV codes, or banking information on our servers. All payment data is handled directly by Stripe under their own PCI-DSS compliant systems. We only receive a confirmation of payment status, your subscription tier, and your Stripe customer ID for billing purposes.",
+        content: "SmartLink Pilot uses Pesapal for payment processing. We do not store your credit card numbers, CVV codes, mobile money PINs, or banking information on our servers. All payment data is handled directly by Pesapal under their own PCI-DSS compliant systems. We only receive a confirmation of payment status, your subscription tier, and a transaction reference ID for billing purposes.",
       },
       {
-        title: "2.5 Device Identifiers for Free Trial",
+        title: "2.5 Visitor Session Analytics",
+        content: "We collect anonymous visitor session data to understand how our platform is used. This includes: device type (mobile, tablet, desktop), browser type and operating system, country and city (derived from IP address — the IP itself is not stored), the page or website that referred you to us (referrer/traffic source), pages visited within SmartLink Pilot, and time spent on each page. This data is stored against a random session ID (slp_vsid) generated per browser session and contains no personally identifiable information. It cannot be used to identify you individually.",
+      },
+      {
+        title: "2.6 Device Identifiers for Free Trial",
         content: "For unauthenticated users using our free trial (up to 3 shortened links), we generate a random device identifier stored in an HTTP-only cookie. This identifier is a random UUID and is not linked to any personal information. It is used solely to enforce the 3-link trial limit and expires after one year. You can clear this by clearing your browser cookies.",
+      },
+      {
+        title: "2.7 Advertising — Free Users",
+        content: "Free account users may see advertisements served by Google AdSense. These ads help us keep the free tier available at no cost. Google AdSense may use cookies to serve ads relevant to your browsing interests. Paid subscribers (Pro and Enterprise) do not see any advertisements. You can opt out of personalized Google advertising at g.co/adsettings or by visiting optout.aboutads.info.",
       },
     ],
   },
@@ -49,14 +57,15 @@ const sections = [
     list: [
       "To provide, operate, maintain, and improve our URL shortening and analytics services",
       "To authenticate your identity and manage your account securely",
-      "To process payments and manage your subscription through Stripe",
+      "To process payments and manage your subscription through Pesapal",
       "To generate link analytics reports available in your dashboard",
       "To communicate with you about service updates, security alerts, and support responses",
       "To detect and prevent fraud, abuse, spam, and other malicious activity",
       "To enforce our Terms of Service and Acceptable Use Policy",
       "To comply with applicable laws, regulations, and legal obligations",
       "To analyze aggregate usage patterns (never individual behavior) to improve the platform",
-      "We do NOT use your data to build advertising profiles",
+      "To display relevant ads to free-tier users via Google AdSense (paid subscribers are exempt from all advertising)",
+      "We do NOT use your data to build personal advertising profiles",
       "We do NOT use your data to train third-party AI systems without consent",
       "We do NOT sell your email or contact information to any third parties",
     ],
@@ -68,7 +77,8 @@ const sections = [
       `We do not sell, rent, lease, or trade your personal data to any third parties. We share your information only in the following limited circumstances:`,
     ],
     list: [
-      "Stripe (payment processing): Your payment information is processed by Stripe. See Stripe's Privacy Policy at stripe.com/privacy",
+      "Pesapal (payment processing): Your payment information is processed by Pesapal. See Pesapal's Privacy Policy at pesapal.com/privacy",
+      "Google AdSense (advertising): Free-tier users may see ads served by Google. Google may use cookies for ad personalization. Paid subscribers are not served ads. See Google's Privacy Policy at policies.google.com/privacy",
       "Vercel (hosting infrastructure): Our platform is hosted on Vercel, which processes traffic to deliver our service. Vercel is GDPR compliant",
       "Prisma / Database providers: Your data is stored in a secure SQLite/PostgreSQL database instance. Only authorized internal staff have access",
       "Legal requirements: If required by law, court order, or governmental authority, we may disclose data. We will notify affected users where legally permitted",
@@ -121,8 +131,10 @@ const sections = [
     content: [
       "We use cookies and similar technologies to provide our service. For full details, please see our Cookies Policy at smartlinkpilot.com/cookies.",
       "Essential cookies (required): Authentication session tokens to keep you logged in. Security tokens to prevent CSRF attacks. Device identifier for free trial enforcement.",
+      "Visitor analytics (functional): A random session ID (slp_vsid) stored in sessionStorage to track anonymous visitor sessions for platform analytics. Contains no personally identifiable information.",
+      "Advertising cookies (free users only): Google AdSense may place cookies on your device if you use a free SmartLink Pilot account to serve relevant advertisements. These cookies are not placed for paid subscribers.",
       "Functional cookies (optional): Theme preference (dark/light mode) stored in localStorage.",
-      "We do not use third-party advertising cookies. We do not use cross-site tracking cookies. You can control cookie settings through your browser preferences.",
+      "You can control cookie settings through your browser preferences. See our full Cookies Policy for details.",
     ],
   },
   {
@@ -162,7 +174,7 @@ export default function PrivacyPolicyPage() {
       <div className="bg-gradient-to-br from-blue-600 to-purple-700 dark:from-blue-800 dark:to-purple-900 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">Privacy Policy</h1>
-          <p className="text-blue-100 mb-2">Last updated: March 31, 2026</p>
+          <p className="text-blue-100 mb-2">Last updated: April 2, 2026</p>
           <p className="text-blue-200 text-sm max-w-xl mx-auto">We believe in radical transparency. This policy tells you exactly what data we collect, why, and what you can do about it — in plain English.</p>
         </div>
       </div>

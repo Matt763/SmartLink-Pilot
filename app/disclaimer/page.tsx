@@ -64,7 +64,17 @@ const sections = [
     content: [
       "SmartLink Pilot's website and platform may contain links to third-party products, services, or resources. Some of these links may be affiliate links, meaning we may receive a commission or referral fee if you click through and make a purchase — at no additional cost to you.",
       "We only link to third-party services that we genuinely believe may be useful to our users. However, our inclusion of any affiliate link does not constitute an endorsement of the product or service, and we encourage you to do your own research before making any purchase.",
-      "Our platform may display advertisements through Google AdSense or similar advertising networks. These advertisements are clearly labeled and are separate from our editorial content. Third-party advertisers may use cookies to serve ads based on your prior visits to websites. You can opt out of personalized advertising at optout.aboutads.info.",
+      "Free-tier SmartLink Pilot accounts display advertisements served by Google AdSense. These advertisements are clearly labeled and are separate from our editorial content. Google AdSense may use cookies to serve ads relevant to your browsing interests. Paid subscribers (Pro and Enterprise plans) do not see any advertisements and are not subject to advertising cookies. You can opt out of personalized advertising at g.co/adsettings or optout.aboutads.info.",
+    ],
+  },
+  {
+    id: "visitor-analytics",
+    icon: BarChart2,
+    title: "Visitor Analytics Disclosure",
+    content: [
+      "SmartLink Pilot operates its own internal visitor analytics system. When you visit our platform, we collect anonymous session data including your device type, browser, operating system, country, city (from IP geolocation — the IP itself is not stored), the page or website that referred you to SmartLink Pilot, the pages you visit, and the time you spend on each page.",
+      "This data is stored against a randomly generated session identifier (slp_vsid) that contains no personally identifiable information. It is used solely to understand aggregate traffic patterns, improve the platform, and generate platform-wide usage statistics for internal reporting. It is not used to create individual profiles or to target advertising.",
+      "This system is separate from link click analytics (which tracks clicks on your shortened links) and from Google AdSense (which applies only to free-tier users). You can read more in our Privacy Policy and Cookies Policy.",
     ],
   },
   {
@@ -100,7 +110,7 @@ const sections = [
     content: [
       "If you have questions about this Disclaimer, wish to report a policy violation, or need clarification on any of the above points, please contact us:",
       "Email: legal@smartlinkpilot.com | Abuse reports: support@smartlinkpilot.com",
-      "This Disclaimer was last updated on March 31, 2026, and should be read in conjunction with our Privacy Policy, Terms of Service, and Cookies Policy.",
+      "This Disclaimer was last updated on April 2, 2026, and should be read in conjunction with our Privacy Policy, Terms of Service, and Cookies Policy.",
     ],
   },
 ];
@@ -118,7 +128,7 @@ export default function DisclaimerPage() {
             <span className="text-white/90 text-sm font-semibold">Legal Disclaimer</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">Disclaimer</h1>
-          <p className="text-gray-400 mb-2">Last updated: March 31, 2026</p>
+          <p className="text-gray-400 mb-2">Last updated: April 2, 2026</p>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">Please read this Disclaimer carefully before using SmartLink Pilot. It covers important limitations and disclosures including affiliate links, analytics accuracy, and service availability.</p>
         </div>
       </div>
