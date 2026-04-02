@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { id, title, slug, content, excerpt, youtubeId, published } = body;
+    const { id, title, slug, content, excerpt, featuredImage, youtubeId, published } = body;
 
     if (!title || !slug || !content) {
       return new NextResponse("Missing core fields", { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       slug,
       content,
       excerpt: excerpt || "A comprehensive technical guide to mastering SmartLink Pilot.",
+      featuredImage: featuredImage || null,
       youtubeId: youtubeId || null,
       published: published ?? false,
       authorId: session.user.id

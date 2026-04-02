@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const post = await prisma.blogPost.findUnique({ where: { slug: params.slug } });
   if (!post) return { title: "Not Found" };
 
-  const ogImage = extractFirstImage(post.content || "") || DEFAULT_OG;
+  const ogImage = (post as any).featuredImage || extractFirstImage(post.content || "") || DEFAULT_OG;
   const absoluteOg = ogImage.startsWith("http") ? ogImage : `${BASE_URL}${ogImage}`;
   const url = `${BASE_URL}/blog/${post.slug}`;
 
@@ -54,7 +54,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   if (!post) notFound();
 
-  const featuredImage = extractFirstImage(post.content || "");
+  const featuredImage = (post as any).featuredImage || extractFirstImage(post.content || "");
 
   // Read time approx (~200 WPM)
   const wordCount = post.content?.split(' ').length || 0;

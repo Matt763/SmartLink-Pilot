@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Plus, Loader2, Save, Trash2, Settings, ArrowLeft, Zap, Lock } from "lucide-react";
+import {
+  Sparkles, Plus, Loader2, Save, Trash2, ArrowLeft, Zap,
+  Eye, EyeOff, RotateCcw, Check, Image as ImageIcon, Youtube
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -12,41 +15,38 @@ interface BlogPost {
   slug: string;
   excerpt: string;
   content: string;
+  featuredImage?: string;
+  youtubeId?: string;
   published: boolean;
   createdAt: string;
 }
 
+const EMPTY_POST: Partial<BlogPost> = {
+  title: "", content: "", excerpt: "", slug: "",
+  featuredImage: "", youtubeId: "", published: false,
+};
+
 export default function AdminBlogManager() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Editor State
   const [isEditing, setIsEditing] = useState(false);
-  const [activePost, setActivePost] = useState<Partial<BlogPost>>({ title: "", content: "", excerpt: "", slug: "", published: true });
+  const [activePost, setActivePost] = useState<Partial<BlogPost>>(EMPTY_POST);
   const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [topicPrompt, setTopicPrompt] = useState("");
-  
-  // Mass Generator State
   const [massGenCount, setMassGenCount] = useState(5);
   const [massGenActive, setMassGenActive] = useState(false);
   const [massGenProgress, setMassGenProgress] = useState(0);
+  const [saved, setSaved] = useState(false);
 
-  // AI Key Integration
-  const [apiKey, setApiKey] = useState("");
-  const [keySaved, setKeySaved] = useState(false);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  useEffect(() => { fetchPosts(); }, []);
 
   const fetchPosts = async () => {
     try {
       const res = await fetch("/api/admin/blog");
       const data = await res.json();
-      setPosts(data);
+      setPosts(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -54,489 +54,497 @@ export default function AdminBlogManager() {
     }
   };
 
-  const saveApiKey = async () => {
-    if (!apiKey) return;
-    try {
-        await fetch("/api/admin/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "set_setting", key: "OPENAI_API_KEY", value: apiKey })
-        });
-        setKeySaved(true);
-        setTimeout(() => setKeySaved(false), 3000);
-        setApiKey("");
-    } catch(e) {
-        console.error("Failed saving API key");
-    }
-  };
-
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-
-  // Slug Automation: Real-time synchronization
+  // Auto-generate slug from title
   useEffect(() => {
     if (!isEditing || !activePost.title) return;
-    
-    // Only auto-generate if slug is currently empty or was previously auto-generated from an empty state
-    // We check if the trimmed slug is empty to trigger the automation
     if (!activePost.slug || activePost.slug.trim() === "") {
-        const generatedSlug = activePost.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)+/g, "");
-        setActivePost(prev => ({ ...prev, slug: generatedSlug }));
+      const slug = activePost.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      setActivePost(prev => ({ ...prev, slug }));
     }
   }, [activePost.title, isEditing]);
 
-  // Auto-Save Mechanism
+  // Auto-save after 4 seconds of inactivity
   useEffect(() => {
     if (!isEditing || !activePost.title || !activePost.content) return;
-
     const timer = setTimeout(async () => {
-        setSaving(true);
-        try {
-            const res = await fetch("/api/admin/blog", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...activePost, published: activePost.published ?? false })
-            });
-            const savedPost = await res.json();
-            
-            // If it's a new post, we capture the ID to ensure future updates upsert correctly
-            if (!activePost.id && savedPost.id) {
-                setActivePost(prev => ({ ...prev, id: savedPost.id }));
-            }
-            setLastSaved(new Date());
-        } catch (e) {
-            console.error("Auto-sync failed", e);
-        } finally {
-            setSaving(false);
+      setSaving(true);
+      try {
+        const res = await fetch("/api/admin/blog", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...activePost, published: activePost.published ?? false }),
+        });
+        const savedPost = await res.json();
+        if (!activePost.id && savedPost.id) {
+          setActivePost(prev => ({ ...prev, id: savedPost.id }));
         }
-    }, 4000); // Debounce for 4 seconds of idle time
-
+        setLastSaved(new Date());
+      } catch (e) {
+        console.error("Auto-save failed", e);
+      } finally {
+        setSaving(false);
+      }
+    }, 4000);
     return () => clearTimeout(timer);
   }, [activePost.title, activePost.content, activePost.id, isEditing]);
 
-  const handleSave = async () => {
+  const handleSave = async (publish = true) => {
+    if (!activePost.title || !activePost.content) {
+      alert("Title and content are required.");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/admin/blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...activePost, published: true }) // Force Live Publish
+        body: JSON.stringify({ ...activePost, published: publish }),
       });
       if (res.ok) {
-        alert("Post Successfully Deployed to Live Architecture.");
-        setIsEditing(false);
-        fetchPosts();
+        const savedPost = await res.json();
+        if (!activePost.id && savedPost.id) setActivePost(prev => ({ ...prev, id: savedPost.id }));
+        setLastSaved(new Date());
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+        if (publish) {
+          setIsEditing(false);
+          fetchPosts();
+        }
       } else {
-        alert("Failed to save post");
+        alert("Failed to save post.");
       }
     } catch (e) {
-      alert("Error saving post");
+      alert("Error saving post.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if(!confirm("Delete this blog post?")) return;
+    if (!confirm("Delete this post? This cannot be undone.")) return;
     try {
       await fetch("/api/admin/blog", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id }),
       });
       fetchPosts();
     } catch (e) {
-      alert("Failed to delete");
+      alert("Failed to delete.");
     }
   };
 
-  const handleAIGenerate = async (targetTopic: string, autoSave: boolean = false) => {
+  const handleAIGenerate = async (targetTopic: string, autoSave = false) => {
     if (!targetTopic.trim()) return;
     if (!autoSave) setAiLoading(true);
-    
     try {
       const res = await fetch("/api/admin/ai-writer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: targetTopic })
+        body: JSON.stringify({ topic: targetTopic }),
       });
-      
-      if (!res.ok) throw new Error("AI Generation failed");
-      
+      if (!res.ok) throw new Error("AI generation failed");
       const { title, excerpt, content } = await res.json();
-      
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      
-      // Structural Transformer: Convert MD headers to HTML for the Quill editor
-      const processedContent = content
-        .split('\n')
-        .map(line => {
-          const headerMatch = line.match(/^(#{1,4})\s+(.*)$/);
-          if (headerMatch) {
-            const level = headerMatch[1].length;
-            return `<h${level}>${headerMatch[2]}</h${level}>`;
-          }
-          if (line.trim() === "") return "<p><br></p>"; // Quill newline
-          return `<p>${line}</p>`;
-        })
-        .join("");
-
-      const newPostData = {
-        title, slug, excerpt, content: processedContent, published: true
-      };
-
+      const processedContent = content.split("\n").map((line: string) => {
+        const headerMatch = line.match(/^(#{1,4})\s+(.*)$/);
+        if (headerMatch) return `<h${headerMatch[1].length}>${headerMatch[2]}</h${headerMatch[1].length}>`;
+        if (line.trim() === "") return "<p><br></p>";
+        return `<p>${line}</p>`;
+      }).join("");
+      const newPostData = { title, slug, excerpt, content: processedContent, published: false };
       if (autoSave) {
         await fetch("/api/admin/blog", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newPostData)
+          body: JSON.stringify(newPostData),
         });
       } else {
         setActivePost(newPostData);
       }
     } catch (e: any) {
-      console.error(e);
-      if (!autoSave) alert("Error generating post: " + e.message);
+      if (!autoSave) alert("Error: " + e.message);
     } finally {
       if (!autoSave) setAiLoading(false);
     }
   };
 
   const runMassGenerator = async () => {
-    if (!confirm(`Are you sure you want to trigger OpenAI ${massGenCount} times? This will consume API credits.`)) return;
+    if (!confirm(`This will use OpenAI API ${massGenCount} times. Continue?`)) return;
     setMassGenActive(true);
     setMassGenProgress(0);
-
-    // List of broad SaaS/marketing topics
-    const genericTopics = [
+    const topics = [
       "URL shortening basics", "Marketing ROI optimization", "Social media link tracking",
-      "QR code strategies for retail", "Email marketing deep linking", "Affiliate link cloaking guide",
-      "UTM parameters tutorial", "Custom domains branding", "Link retargeting strategies", "Metrics & Click Analytics"
+      "QR code strategies", "Email marketing deep linking", "Affiliate link cloaking",
+      "UTM parameters tutorial", "Custom domains branding", "Link retargeting strategies", "Click analytics mastery",
     ];
-
     for (let i = 0; i < massGenCount; i++) {
-        const selectedTopic = genericTopics[i % genericTopics.length] + " " + Math.floor(Math.random() * 1000);
-        await handleAIGenerate("How to master " + selectedTopic, true);
-        setMassGenProgress(i + 1);
+      const topic = topics[i % topics.length] + " " + Math.floor(Math.random() * 1000);
+      await handleAIGenerate("How to master " + topic, true);
+      setMassGenProgress(i + 1);
     }
-
     setMassGenActive(false);
     fetchPosts();
-    alert("Mass Generation Complete!");
+    alert("Batch generation complete!");
+  };
+
+  const openEditor = (post?: BlogPost) => {
+    setActivePost(post ? { ...post } : { ...EMPTY_POST });
+    setLastSaved(null);
+    setSaved(false);
+    setIsEditing(true);
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-gray-200 relative overflow-hidden selection:bg-indigo-500/30">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }}></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-      <div className="max-w-7xl mx-auto px-6 py-12 relative z-10 space-y-12">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 border-b border-white/5 pb-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-6">
-                <Link href="/admin" className="group p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-2xl">
-                    <ArrowLeft size={20} className="text-gray-400 group-hover:text-white" />
-                </Link>
-                <div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter flex items-center gap-3">
-                        <span className="text-indigo-500">AI</span> CONTENT COMMAND
-                    </h1>
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-[0.3em] mt-1">Autonomous Content Generation Engine</p>
-                </div>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" className="p-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-700 transition shadow-sm">
+              <ArrowLeft size={18} className="text-gray-600 dark:text-gray-400" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Blog Manager</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{posts.length} article{posts.length !== 1 ? "s" : ""} total</p>
             </div>
           </div>
-          <button 
-            onClick={() => { setActivePost({ title: "", content: "", excerpt: "", slug: "", published: true }); setIsEditing(true); }}
-            className="group relative px-8 py-4 bg-white text-black font-black rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-3 overflow-hidden"
+          <button
+            onClick={() => openEditor()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition hover:scale-[1.02] active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <Plus size={20} /> <span className="relative z-10 uppercase tracking-tighter">Initialize New Post</span>
+            <Plus size={18} /> New Post
           </button>
         </div>
 
-        {/* Command Center: Mass Generator */}
-        <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-            <div className="relative bg-[#0a0a0a]/80 backdrop-blur-3xl p-8 rounded-3xl border border-white/10 shadow-3xl overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <Settings size={120} className="text-white animate-spin-slow" />
-                </div>
-                
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 relative z-10">
-                    <div className="flex-1 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                                <Sparkles size={20} className="text-indigo-400" />
-                            </div>
-                            <h2 className="text-2xl font-black text-white tracking-tight">Automated Fleet Generator</h2>
-                        </div>
-                        <p className="max-w-2xl text-gray-400 font-medium leading-relaxed">
-                            Deploy high-performance AI sub-agents to synthesize and publish SEO-optimized technical articles. 
-                            Each generation utilizes advanced LLM chains to ensure 1500+ words of unique, high-value value.
-                        </p>
-                    </div>
-
-                    <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                        <div className="relative">
-                            <input 
-                                type="number" 
-                                min={1} max={100}
-                                value={massGenCount}
-                                onChange={(e) => setMassGenCount(Number(e.target.value))}
-                                className="px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl w-full sm:w-32 font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-center shadow-inner"
-                            />
-                            <span className="absolute -top-3 left-4 px-2 bg-[#0a0a0a] text-[10px] font-bold text-gray-500 uppercase">Payload Count</span>
-                        </div>
-                        <button 
-                            onClick={runMassGenerator}
-                            disabled={massGenActive}
-                            className={`group px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-all shadow-2xl flex items-center justify-center gap-3 font-black uppercase tracking-tight disabled:opacity-50 ${massGenActive ? 'animate-pulse' : 'hover:scale-105 active:scale-95'}`}
-                        >
-                            {massGenActive ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} className="fill-current"/>}
-                            {massGenActive ? `GENERATING ${massGenProgress}/${massGenCount}` : "Execute Hyper-Batch"}
-                        </button>
-                    </div>
-                </div>
-                
-                {massGenActive && (
-                    <div className="mt-10 space-y-3">
-                        <div className="flex justify-between text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">
-                            <span>Fleet Progress</span>
-                            <span>{Math.round((massGenProgress/massGenCount)*100)}% Complete</span>
-                        </div>
-                        <div className="w-full bg-white/5 rounded-full h-3 p-1">
-                            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(99,102,241,0.5)]" style={{ width: `${(massGenProgress/massGenCount)*100}%` }}></div>
-                        </div>
-                    </div>
-                )}
+        {/* AI Batch Generator */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Sparkles size={20} className="text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 dark:text-white">AI Batch Post Generator</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Auto-generate and publish multiple SEO-optimized articles at once using AI.
+                </p>
+              </div>
             </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="relative">
+                <input
+                  type="number" min={1} max={50}
+                  value={massGenCount}
+                  onChange={e => setMassGenCount(Number(e.target.value))}
+                  className="w-24 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold text-center focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <span className="absolute -top-2.5 left-2 text-[10px] font-bold text-gray-400 bg-white dark:bg-gray-900 px-1">Count</span>
+              </div>
+              <button
+                onClick={runMassGenerator}
+                disabled={massGenActive}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition disabled:opacity-50 shadow-sm"
+              >
+                {massGenActive
+                  ? <><Loader2 size={16} className="animate-spin" /> {massGenProgress}/{massGenCount}</>
+                  : <><Zap size={16} /> Generate</>
+                }
+              </button>
+            </div>
+          </div>
+          {massGenActive && (
+            <div className="mt-5 space-y-2">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>Generating articles…</span>
+                <span>{Math.round((massGenProgress / massGenCount) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(massGenProgress / massGenCount) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Core Editor / Draft View */}
+        {/* Editor */}
         {isEditing && (
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="bg-[#0f0f0f] p-8 rounded-[2.5rem] border border-white/10 shadow-4xl space-y-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-                
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="w-2 h-10 bg-indigo-500 rounded-full"></div>
-                        <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Syndication Architect</h2>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        {lastSaved && (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/5 rounded-full border border-indigo-500/20 text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-in fade-in zoom-in">
-                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-                                Last Encrypted Sync: {lastSaved.toLocaleTimeString()}
-                            </div>
-                        )}
-                        <button onClick={() => setIsEditing(false)} className="px-6 py-3 text-gray-400 font-bold bg-white/5 hover:bg-white/10 rounded-2xl transition tracking-tight">Abort Session</button>
-                        <button onClick={handleSave} disabled={saving} className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black rounded-2xl flex items-center gap-2 hover:scale-105 active:scale-95 shadow-2xl transition transform uppercase tracking-tighter group overflow-hidden">
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            {saving ? <Loader2 className="animate-spin" size={18}/> : <Zap size={18} className="fill-current" />} Deploy to Live
-                        </button>
-                    </div>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+
+            {/* Editor header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex items-center gap-3">
+                <h2 className="font-bold text-gray-900 dark:text-white">
+                  {activePost.id ? "Edit Post" : "New Post"}
+                </h2>
+                {lastSaved && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                    Saved {lastSaved.toLocaleTimeString()}
+                  </span>
+                )}
+                {saving && (
+                  <span className="text-xs text-indigo-500 flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" /> Saving…
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-medium text-sm rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                >
+                  <Save size={15} /> Save Draft
+                </button>
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-sm disabled:opacity-50"
+                >
+                  {saved ? <><Check size={15} /> Published!</> : <><Eye size={15} /> Publish</>}
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col xl:flex-row gap-0">
+
+              {/* Main form fields */}
+              <div className="flex-1 p-6 space-y-6">
+
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Title *</label>
+                  <input
+                    className="w-full text-2xl font-bold px-0 py-1 bg-transparent text-gray-900 dark:text-white border-0 border-b-2 border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-400 focus:outline-none transition placeholder-gray-300 dark:placeholder-gray-600"
+                    placeholder="Article title…"
+                    value={activePost.title || ""}
+                    onChange={e => setActivePost({ ...activePost, title: e.target.value })}
+                  />
                 </div>
 
-                <div className="flex flex-col xl:flex-row gap-10">
-                    <div className="flex-1 space-y-8 relative z-10">
-                        <div className="group space-y-2">
-                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Primary Title Element</label>
-                             <input 
-                                className="w-full text-4xl font-black p-4 bg-transparent text-white border-b-2 border-white/10 focus:border-indigo-500 focus:outline-none transition-colors placeholder-white/20 tracking-tighter" 
-                                placeholder="Article Headline..." 
-                                value={activePost.title} 
-                                onChange={e => setActivePost({...activePost, title: e.target.value})} 
-                            />
-                        </div>
-                        
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="flex-1 group space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Secure Routing Path</label>
-                                <input className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono text-indigo-400 focus:ring-2 focus:ring-indigo-500 outline-none shadow-inner" placeholder="slug-url-path" value={activePost.slug} onChange={e => setActivePost({...activePost, slug: e.target.value})} />
-                            </div>
-                            <div className="group space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Traffic Status</label>
-                                <label className="flex items-center gap-3 h-[54px] px-8 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition group">
-                                    <input type="checkbox" className="w-5 h-5 rounded-lg border-white/20 bg-transparent text-indigo-500 focus:ring-indigo-500 transition cursor-pointer" checked={activePost.published} onChange={e => setActivePost({...activePost, published: e.target.checked})} /> 
-                                    <span className="font-black text-sm uppercase tracking-tighter text-white">Live Broadcast</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Executive Summary</label>
-                             <textarea 
-                                className="w-full h-28 p-6 bg-white/5 border border-white/10 rounded-2xl resize-none text-gray-300 font-medium focus:ring-2 focus:ring-indigo-500 outline-none shadow-inner leading-relaxed" 
-                                placeholder="Brief architectural overview of the content..." 
-                                value={activePost.excerpt} 
-                                onChange={e => setActivePost({...activePost, excerpt: e.target.value})} 
-                            />
-                        </div>
-                        
-                        <div className="space-y-4">
-                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 flex items-center gap-2">
-                                 Main Content Matrix <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></div>
-                             </label>
-                             <div className="min-h-[600px] bg-white/5 border border-white/10 rounded-3xl p-4 shadow-inner ring-1 ring-white/5">
-                                <RichTextEditor 
-                                    value={activePost.content || ""} 
-                                    onChange={v => setActivePost({...activePost, content: v})} 
-                                />
-                             </div>
-                        </div>
+                {/* Slug + Published */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">URL Slug *</label>
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                      <span className="text-gray-400 text-sm">/blog/</span>
+                      <input
+                        className="flex-1 bg-transparent text-sm font-mono text-indigo-600 dark:text-indigo-400 focus:outline-none"
+                        placeholder="url-slug"
+                        value={activePost.slug || ""}
+                        onChange={e => setActivePost({ ...activePost, slug: e.target.value })}
+                      />
                     </div>
-
-                    {/* AI Intelligence Sidebar */}
-                    <div className="w-full xl:w-96 flex flex-col gap-6 sticky top-8 h-fit">
-                        <div className="relative group overflow-hidden bg-indigo-600 rounded-[2rem] p-8 shadow-2xl">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:scale-125 transition-transform duration-1000"></div>
-                            <div className="relative z-10 space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <Sparkles size={24} className="text-white fill-current"/>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Neuro-Scribe</h3>
-                                </div>
-                                <p className="text-xs font-bold text-indigo-100 leading-relaxed uppercase tracking-widest opacity-80">
-                                    Input your operational parameters and the AI will synthesize a complete technical dossier.
-                                </p>
-                                <textarea 
-                                    className="w-full h-40 p-4 bg-white/10 border border-white/20 rounded-2xl text-sm text-white placeholder-white/40 focus:bg-white/20 outline-none transition resize-none font-medium" 
-                                    placeholder="Operational objective (e.g. Masterclass on Link Infrastructure)..."
-                                    value={topicPrompt}
-                                    onChange={e => setTopicPrompt(e.target.value)}
-                                />
-                                <button 
-                                    onClick={() => handleAIGenerate(topicPrompt)}
-                                    disabled={aiLoading}
-                                    className="w-full py-4 bg-white text-indigo-600 font-black rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.03] active:scale-95 transition shadow-2xl uppercase tracking-tighter text-sm"
-                                >
-                                    {aiLoading ? <Loader2 className="animate-spin" size={18}/> : <Zap size={18}/>} 
-                                    {aiLoading ? "Synthesizing..." : "Initiate Protocol"}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white/5 backdrop-blur-md p-8 rounded-[2rem] border border-white/10 space-y-6">
-                            <div className="flex items-center gap-3">
-                                <Lock size={18} className="text-indigo-400" />
-                                <h3 className="font-black text-white uppercase tracking-tighter text-sm">Security Gateway</h3>
-                            </div>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">OpenAI Command Authorization</p>
-                            <input 
-                                type="password"
-                                placeholder="sk-proj-••••••••"
-                                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-sm font-mono text-indigo-400 focus:bg-white/10 outline-none transition shadow-inner"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                            />
-                            <button 
-                                onClick={saveApiKey}
-                                className={`w-full py-4 rounded-xl font-black transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 ${keySaved ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white text-black hover:bg-gray-200'}`}
-                            >
-                                {keySaved ? "Access Granted ✓" : "Commit Access Key"}
-                            </button>
-                        </div>
-                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Visibility</label>
+                    <label className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition h-[46px]">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        checked={activePost.published ?? false}
+                        onChange={e => setActivePost({ ...activePost, published: e.target.checked })}
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        {activePost.published ? "Published" : "Draft"}
+                      </span>
+                    </label>
+                  </div>
                 </div>
+
+                {/* Excerpt */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Excerpt / Summary</label>
+                  <textarea
+                    className="w-full h-24 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition leading-relaxed"
+                    placeholder="Brief description shown on the blog listing page…"
+                    value={activePost.excerpt || ""}
+                    onChange={e => setActivePost({ ...activePost, excerpt: e.target.value })}
+                  />
+                </div>
+
+                {/* Featured Image + YouTube */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      <ImageIcon size={13} /> Featured Image URL
+                    </label>
+                    <input
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                      placeholder="https://example.com/image.jpg"
+                      value={activePost.featuredImage || ""}
+                      onChange={e => setActivePost({ ...activePost, featuredImage: e.target.value })}
+                    />
+                    {activePost.featuredImage && (
+                      <img src={activePost.featuredImage} alt="Preview" className="mt-2 h-20 w-auto rounded-lg object-cover border border-gray-200 dark:border-gray-700" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    )}
+                  </div>
+                  <div className="sm:w-56">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      <Youtube size={13} /> YouTube Video ID
+                    </label>
+                    <input
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-mono text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                      placeholder="dQw4w9WgXcQ"
+                      value={activePost.youtubeId || ""}
+                      onChange={e => setActivePost({ ...activePost, youtubeId: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* Rich Text Editor */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Content *</label>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <RichTextEditor
+                      value={activePost.content || ""}
+                      onChange={v => setActivePost({ ...activePost, content: v })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* AI sidebar */}
+              <div className="xl:w-80 flex-shrink-0 p-6 border-t xl:border-t-0 xl:border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30 space-y-6">
+                <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles size={18} className="fill-current" />
+                    <h3 className="font-bold">AI Writer</h3>
+                  </div>
+                  <p className="text-xs text-indigo-100 mb-4 leading-relaxed">
+                    Enter a topic and the AI will generate a full article for you.
+                  </p>
+                  <textarea
+                    className="w-full h-28 p-3 bg-white/15 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:bg-white/20 outline-none transition resize-none"
+                    placeholder="e.g. How to use UTM parameters for marketing campaigns"
+                    value={topicPrompt}
+                    onChange={e => setTopicPrompt(e.target.value)}
+                  />
+                  <button
+                    onClick={() => handleAIGenerate(topicPrompt)}
+                    disabled={aiLoading || !topicPrompt.trim()}
+                    className="w-full mt-3 py-2.5 bg-white text-indigo-600 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-50 transition text-sm disabled:opacity-60"
+                  >
+                    {aiLoading ? <><Loader2 size={16} className="animate-spin" /> Generating…</> : <><Zap size={16} /> Generate Article</>}
+                  </button>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-5">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-3">Publishing</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                      <span>Status</span>
+                      <span className={`font-semibold ${activePost.published ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
+                        {activePost.published ? "Published" : "Draft"}
+                      </span>
+                    </div>
+                    {activePost.id && (
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                        <span>URL</span>
+                        <a href={`/blog/${activePost.slug}`} target="_blank" rel="noopener" className="text-indigo-600 dark:text-indigo-400 text-xs font-mono hover:underline truncate max-w-[130px]">
+                          /blog/{activePost.slug}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Operational Records Table */}
+        {/* Posts list */}
         {!isEditing && (
-            <div className="bg-[#0a0a0a] rounded-[2.5rem] border border-white/10 overflow-hidden shadow-4xl relative group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                
-                <div className="p-10 border-b border-white/5 flex items-center justify-between">
-                    <div>
-                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase">Knowledge Repository</h3>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-1">Archived Publications & Telemetry</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                         <div className="px-5 py-2 bg-white/5 rounded-full text-[10px] font-black text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">
-                             {posts.length} RECORDS
-                         </div>
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="p-24 flex flex-col items-center justify-center gap-4">
-                        <Loader2 className="animate-spin text-indigo-500" size={48}/>
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Accessing Secure Vault...</span>
-                    </div>
-                ) : posts.length === 0 ? (
-                    <div className="p-24 text-center">
-                        <div className="max-w-md mx-auto space-y-6">
-                            <Sparkles size={64} className="mx-auto text-gray-700 opacity-20" />
-                            <p className="text-gray-500 font-black text-lg tracking-tight uppercase">Archive is currently empty.</p>
-                            <button onClick={() => setIsEditing(true)} className="px-6 py-3 bg-white/5 hover:bg-indigo-500/10 border border-white/10 hover:border-indigo-500/30 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest">Initialize First Record</button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/[0.02] border-b border-white/5">
-                                <th className="p-8 font-black text-[10px] text-gray-500 uppercase tracking-[0.2em]">Publication Descriptor</th>
-                                <th className="p-8 font-black text-[10px] text-gray-500 uppercase tracking-[0.2em] w-48 text-center">Operational Status</th>
-                                <th className="p-8 font-black text-[10px] text-gray-500 uppercase tracking-[0.2em] w-48 text-center">Staged Time</th>
-                                <th className="p-8 w-48"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {posts.map(post => (
-                            <tr key={post.id} className="group hover:bg-white/[0.02] transition-colors">
-                                <td className="p-8">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-lg font-black text-white tracking-tight group-hover:text-indigo-400 transition-colors uppercase leading-tight">{post.title}</p>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-                                            <span className="text-[10px] text-gray-500 font-mono tracking-tighter">SOURCE: /blog/{post.slug}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-8 text-center">
-                                    <div className="inline-flex">
-                                        {post.published ? (
-                                            <span className="px-5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]">Live</span>
-                                        ) : (
-                                            <span className="px-5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">Offline</span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-8 text-center">
-                                    <span className="text-sm font-black text-gray-500 uppercase tabular-nums">
-                                        {new Date(post.createdAt).toLocaleDateString()}
-                                    </span>
-                                </td>
-                                <td className="p-8">
-                                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-                                        <button 
-                                            onClick={() => { setActivePost(post); setIsEditing(true); }} 
-                                            className="px-6 py-2.5 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/30 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest shadow-2xl"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDelete(post.id)} 
-                                            className="p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 rounded-xl transition-all group/del"
-                                        >
-                                            <Trash2 size={16} className="group-hover/del:scale-110 transition-transform" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            ))}
-                        </tbody>
-                        </table>
-                    </div>
-                )}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-bold text-gray-900 dark:text-white">All Posts</h3>
             </div>
+
+            {loading ? (
+              <div className="py-16 flex items-center justify-center gap-3 text-gray-400">
+                <Loader2 size={24} className="animate-spin text-indigo-500" />
+                <span className="text-sm">Loading posts…</span>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="py-20 text-center">
+                <Sparkles size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium mb-4">No posts yet</p>
+                <button
+                  onClick={() => openEditor()}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition text-sm"
+                >
+                  Create your first post
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-28">Status</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Date</th>
+                      <th className="px-6 py-3 w-28" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {posts.map(post => (
+                      <tr key={post.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              {post.title}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">/blog/{post.slug}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {post.published ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Live
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Draft
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => openEditor(post)}
+                              className="px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(post.id)}
+                              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

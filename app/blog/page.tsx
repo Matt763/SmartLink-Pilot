@@ -11,12 +11,21 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+/** Extract the first image URL from post content (markdown or HTML). */
+function extractThumbnail(content: string): string | null {
+  const mdMatch = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/.exec(content || "");
+  if (mdMatch) return mdMatch[1];
+  const htmlMatch = /<img[^>]+src=["'](https?:\/\/[^"']+)["']/.exec(content || "");
+  if (htmlMatch) return htmlMatch[1];
+  return null;
+}
+
 export default async function BlogIndexPage() {
   // Fetch published posts
   const posts = await prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, slug: true, excerpt: true, createdAt: true, content: true },
+    select: { id: true, title: true, slug: true, excerpt: true, createdAt: true, content: true, featuredImage: true },
     take: 100 // Scale limit for pagination. In prod -> implement infinite scroll
   });
 
@@ -66,18 +75,30 @@ export default async function BlogIndexPage() {
                     {posts.map((post, index) => {
                         // Calculate read time approx (200 words per minute)
                         const readTime = Math.max(1, Math.ceil((post.content?.split(' ').length || 0) / 200));
+                        // Use featuredImage, then first image in content, then gradient fallback
+                        const thumbnail = (post as any).featuredImage || extractThumbnail(post.content || "");
 
                         return (
                         <ScrollReveal key={post.id} delay={index * 0.1}>
                             <article className="group flex flex-col h-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                                {/* Thumbnail Mockup - Since we didn't specify a thumbnail field, we generate a luxury gradient based on strings */}
-                                <Link href={`/blog/${post.slug}`} className="block h-48 w-full bg-gradient-to-tr from-indigo-500 to-purple-600 relative overflow-hidden">
-                                   <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
-                                   <div className="absolute flex items-center justify-center inset-0 text-white/20 group-hover:scale-110 transition-transform duration-700">
-                                        <div className="text-8xl font-black italic mix-blend-overlay break-all px-4 truncate tracking-tighter w-full h-full opacity-50 pointer-events-none whitespace-nowrap overflow-hidden">
-                                            {post.title.substring(0, 10).toUpperCase()}
-                                        </div>
-                                   </div>
+                                {/* Thumbnail */}
+                                <Link href={`/blog/${post.slug}`} className="block h-48 w-full relative overflow-hidden bg-gradient-to-tr from-indigo-500 to-purple-600">
+                                   {thumbnail ? (
+                                     <img
+                                       src={thumbnail}
+                                       alt={post.title}
+                                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                     />
+                                   ) : (
+                                     <>
+                                       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300" />
+                                       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                                         <div className="text-8xl font-black italic text-white/15 tracking-tighter w-full px-4 truncate whitespace-nowrap pointer-events-none">
+                                           {post.title.substring(0, 10).toUpperCase()}
+                                         </div>
+                                       </div>
+                                     </>
+                                   )}
                                 </Link>
 
                                 <div className="p-6 flex flex-col flex-grow">

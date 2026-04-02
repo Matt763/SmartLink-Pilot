@@ -3,117 +3,140 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
-import { useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 
 export function Navbar() {
   const { data: session } = useSession();
   const isPro = session?.user?.role === "premium_user" || session?.user?.role === "admin";
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
   return (
-    <nav className="bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              </div>
-              <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Smart<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">Link</span> <span className="text-sm font-bold text-gray-400 dark:text-gray-500">Pilot</span>
-              </span>
-            </Link>
-            {isPro && (
-              <span className="ml-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-white text-[10px] font-black px-2.5 py-1 rounded-md tracking-[0.15em] shadow-sm border border-amber-300/50 uppercase">Pro</span>
-            )}
-          </div>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {[
-              { label: "Features", href: "/features" },
-              { label: "Pricing", href: "/pricing" },
-              { label: "About", href: "/about" },
-              { label: "Blog", href: "/blog" },
-              { label: "Contact", href: "/contact" },
-            ].map(link => (
-              <Link key={link.href} href={link.href} className="px-3.5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                {link.label}
+    <>
+      <nav className="bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                  Smart<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">Link</span> <span className="text-sm font-bold text-gray-400 dark:text-gray-500">Pilot</span>
+                </span>
               </Link>
-            ))}
-          </div>
-          {/* Download App button - desktop */}
-          <Link href="/download" className="hidden md:flex ml-1 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 18.5l-8-8m8 8l8-8M12 18.5V3" /></svg>
-            App
-          </Link>
+              {isPro && (
+                <span className="ml-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-white text-[10px] font-black px-2.5 py-1 rounded-md tracking-[0.15em] shadow-sm border border-amber-300/50 uppercase">Pro</span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            
-            {session ? (
-              <div className="hidden md:flex items-center gap-2">
-                <Link href="/dashboard" className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                  Dashboard
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-1">
+              {[
+                { label: "Features", href: "/features" },
+                { label: "Pricing", href: "/pricing" },
+                { label: "About", href: "/about" },
+                { label: "Blog", href: "/blog" },
+                { label: "Contact", href: "/contact" },
+              ].map(link => (
+                <Link key={link.href} href={link.href} className="px-3.5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                  {link.label}
                 </Link>
-                {session?.user?.role === "admin" && (
-                  <Link href="/admin" className="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all">
-                    Admin
+              ))}
+            </div>
+
+            {/* Download App button - desktop */}
+            <Link href="/download" className="hidden md:flex ml-1 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 18.5l-8-8m8 8l8-8M12 18.5V3" /></svg>
+              App
+            </Link>
+
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+
+              {session ? (
+                <div className="hidden md:flex items-center gap-2">
+                  <Link href="/dashboard" className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    Dashboard
                   </Link>
-                )}
-                <button onClick={() => signOut({ callbackUrl: "/" })} className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                  Sign In
-                </Link>
-                <Link href="/login" className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 transition-all hover:scale-105">
-                  Get Started Free
-                </Link>
-              </div>
-            )}
+                  {session?.user?.role === "admin" && (
+                    <Link href="/admin" className="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all">
+                      Admin
+                    </Link>
+                  )}
+                  <button onClick={() => signOut({ callbackUrl: "/" })} className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="hidden md:flex items-center gap-2">
+                  <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    Sign In
+                  </Link>
+                  <Link href="/login" className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 transition-all hover:scale-105">
+                    Get Started Free
+                  </Link>
+                </div>
+              )}
 
-            {/* Mobile toggle */}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+              {/* Mobile toggle */}
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                aria-label="Toggle menu"
+              >
+                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Overlay — rendered outside nav to avoid stacking context issues */}
       {mobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity"
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden"
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      {/* Mobile Sidebar Drawer */}
+      {/* Mobile Sidebar Drawer — rendered outside nav */}
       <div
-        className={`fixed top-0 right-0 h-screen w-[85vw] max-w-[280px] bg-white dark:bg-gray-950 shadow-2xl border-l border-gray-100 dark:border-gray-800 z-50 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-y-auto ${
+        className={`fixed top-0 right-0 h-[100dvh] w-[85vw] max-w-[300px] bg-white dark:bg-gray-950 shadow-2xl border-l border-gray-100 dark:border-gray-800 z-[70] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-y-auto ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        aria-label="Mobile navigation"
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
               <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             </div>
-            <span className="font-bold text-gray-900 dark:text-white">Pilot Navigation</span>
+            <span className="font-bold text-gray-900 dark:text-white">Navigation</span>
           </div>
-          <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
+            aria-label="Close menu"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">Main Menu</p>
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">Menu</p>
           {[
             { label: "Features", href: "/features" },
             { label: "Pricing", href: "/pricing" },
@@ -121,14 +144,19 @@ export function Navbar() {
             { label: "Blog", href: "/blog" },
             { label: "Contact Us", href: "/contact" },
           ].map(link => (
-            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm flex-1 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition">
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+            >
               {link.label}
             </Link>
           ))}
-          
-          <div className="my-6" />
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">App & Extras</p>
-          
+
+          <div className="pt-4" />
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-2">More</p>
+
           <Link href="/download" onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-xl transition">
             Download App
           </Link>
@@ -136,20 +164,20 @@ export function Navbar() {
           <Link href="/sitemap" onClick={() => setMobileOpen(false)} className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition mt-1">
             Visual Sitemap
           </Link>
-          
-          <div className="my-6 border-t border-gray-100 dark:border-gray-800 pt-6" />
+
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-4" />
 
           {session ? (
             <div className="space-y-2">
               <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 rounded-xl transition shadow-md">
-                Go to Dashboard
+                Dashboard
               </Link>
               {session?.user?.role === "admin" && (
                 <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-xl transition">
-                  Admin CMS
+                  Admin Panel
                 </Link>
               )}
-              <button onClick={() => signOut({ callbackUrl: "/" })} className="w-full mt-4 text-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition">
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="w-full mt-2 text-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition">
                 Sign Out
               </button>
             </div>
@@ -165,6 +193,6 @@ export function Navbar() {
           )}
         </div>
       </div>
-    </nav>
+    </>
   );
 }

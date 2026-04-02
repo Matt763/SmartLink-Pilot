@@ -151,11 +151,22 @@ export default function ClipboardShortener() {
     <div
       id="clipboard-shortener-widget"
       role="dialog"
+      aria-modal="true"
       aria-label="URL shortener suggestion"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] w-full max-w-sm px-4"
-      style={{ animation: "slideUpFade 0.3s ease-out" }}
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ animation: "fadeIn 0.2s ease-out" }}
     >
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl shadow-black/20 dark:shadow-black/60 border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
+        onClick={handleDismiss}
+        aria-hidden="true"
+      />
+
+      <div
+        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl shadow-black/30 dark:shadow-black/70 border border-gray-200 dark:border-gray-700 overflow-hidden w-full max-w-sm"
+        style={{ animation: "slideUpFade 0.3s ease-out" }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div className="flex items-center gap-2">
@@ -242,9 +253,13 @@ export default function ClipboardShortener() {
       </div>
 
       <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
         @keyframes slideUpFade {
-          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; transform: translateY(20px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes shrinkWidth {
           from { width: 100%; }

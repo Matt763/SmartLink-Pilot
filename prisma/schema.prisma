@@ -201,17 +201,18 @@ model AppConfig {
 
 /// Stores published articles for the AI-driven blog engine
 model BlogPost {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  title     String
-  content   String   // The full >1500 word HTML or Markdown content
-  excerpt   String
-  youtubeId String?  // Optional YouTube video ID to embed
-  published Boolean  @default(false)
-  authorId  String?  // Optional Reference to User (Admin)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  content        String   // The full >1500 word HTML or Markdown content
+  excerpt        String
+  featuredImage  String?  // Optional URL for the featured/thumbnail image
+  youtubeId      String?  // Optional YouTube video ID to embed
+  published      Boolean  @default(false)
+  authorId       String?  // Optional Reference to User (Admin)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 }
 
