@@ -290,6 +290,10 @@ export default function AdminPage() {
                 <Eye size={18} className="text-green-500 flex-shrink-0" />
                 <div><p className="text-sm font-bold text-green-900 dark:text-green-200">Visitor Analytics</p><p className="text-xs text-green-700/60 dark:text-green-400/60">Live traffic & audience</p></div>
               </Link>
+              <Link href="/admin/accounts" className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200/50 dark:border-purple-800/30 rounded-xl hover:shadow-md transition">
+                <Users size={18} className="text-purple-500 flex-shrink-0" />
+                <div><p className="text-sm font-bold text-purple-900 dark:text-purple-200">Accounts</p><p className="text-xs text-purple-700/60 dark:text-purple-400/60">Manage users & passwords</p></div>
+              </Link>
             </div>
 
             {/* Income Trend Chart — real data */}

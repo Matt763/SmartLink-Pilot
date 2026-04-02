@@ -376,3 +376,143 @@ export function newsletterPostEmailTemplate(params: {
     html: layout(content),
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. PASSWORD CHANGED BY ADMIN
+// Sender: support@smartlinkpilot.com
+// ─────────────────────────────────────────────────────────────────────────────
+export function passwordChangedByAdminEmailTemplate(
+  name: string,
+  email: string,
+  newPassword: string
+): { subject: string; html: string } {
+  const loginUrl = `${BASE_URL}/login`;
+
+  const content = `
+    <!-- Security badge -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+      <tr>
+        <td>
+          <span style="display:inline-block;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+                       color:#fcd34d;font-size:12px;font-weight:600;letter-spacing:1px;
+                       padding:5px 14px;border-radius:99px;text-transform:uppercase;">
+            Account Update
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <h1 style="margin:16px 0 8px;color:#f8fafc;font-size:28px;font-weight:800;line-height:1.2;">
+      Your password was updated &#x1F511;
+    </h1>
+    <p style="margin:0 0 28px;color:#94a3b8;font-size:15px;line-height:1.6;">
+      Hi <strong style="color:#e2e8f0;">${name}</strong>, an administrator has updated your SmartLink Pilot password.
+      Your new login credentials are below.
+    </p>
+
+    ${infoBox([
+      { label: "Email / Username", value: email },
+      { label: "New Password", value: newPassword },
+    ])}
+
+    <div style="text-align:center;margin:32px 0;">
+      ${ctaButton("&#x1F513;  Log In Now", loginUrl)}
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+      style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:12px;margin-top:8px;">
+      <tr>
+        <td style="padding:16px 20px;">
+          <p style="margin:0 0 6px;color:#a5b4fc;font-size:13px;font-weight:700;">&#x1F4A1; Tip</p>
+          <p style="margin:0;color:#64748b;font-size:13px;line-height:1.5;">
+            After logging in, we recommend changing your password immediately from your profile settings.
+            If you did not expect this change, contact
+            <a href="mailto:support@smartlinkpilot.com" style="color:#6366f1;text-decoration:none;">support@smartlinkpilot.com</a> right away.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin-top:36px;padding-top:24px;border-top:1px solid #1e2d5a;">
+      <p style="margin:0 0 4px;color:#94a3b8;font-size:14px;">Stay secure,</p>
+      <p style="margin:0 0 2px;color:#e2e8f0;font-size:15px;font-weight:700;">SmartLink Pilot Support</p>
+      <p style="margin:0;color:#6366f1;font-size:13px;">
+        <a href="mailto:support@smartlinkpilot.com" style="color:#6366f1;text-decoration:none;">support@smartlinkpilot.com</a>
+      </p>
+    </div>
+  `;
+
+  return {
+    subject: "Your SmartLink Pilot password has been updated",
+    html: layout(content),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. ACCOUNT DELETED BY ADMIN
+// Sender: support@smartlinkpilot.com
+// ─────────────────────────────────────────────────────────────────────────────
+export function accountDeletedEmailTemplate(
+  name: string,
+  email: string
+): { subject: string; html: string } {
+  const content = `
+    <!-- Alert badge -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+      <tr>
+        <td>
+          <span style="display:inline-block;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);
+                       color:#fca5a5;font-size:12px;font-weight:600;letter-spacing:1px;
+                       padding:5px 14px;border-radius:99px;text-transform:uppercase;">
+            Account Notice
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <h1 style="margin:16px 0 8px;color:#f8fafc;font-size:28px;font-weight:800;line-height:1.2;">
+      Your account has been removed
+    </h1>
+    <p style="margin:0 0 28px;color:#94a3b8;font-size:15px;line-height:1.6;">
+      Hi <strong style="color:#e2e8f0;">${name}</strong>, we are writing to inform you that your
+      SmartLink Pilot account associated with <strong style="color:#e2e8f0;">${email}</strong>
+      has been permanently removed from our platform by an administrator.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+      style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:12px;margin-bottom:28px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 8px;color:#fca5a5;font-size:13px;font-weight:700;">What this means:</p>
+          <ul style="margin:0;padding-left:16px;color:#78716c;font-size:13px;line-height:1.8;">
+            <li>All your shortened links and analytics data have been removed</li>
+            <li>Any active subscription has been cancelled</li>
+            <li>You will no longer be able to log in with this email</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 28px;color:#94a3b8;font-size:14px;line-height:1.6;">
+      If you believe this was done in error or would like more information,
+      please reach out to our support team.
+    </p>
+
+    <div style="text-align:center;margin:8px 0 32px;">
+      ${ctaButton("Contact Support", "mailto:support@smartlinkpilot.com")}
+    </div>
+
+    <div style="margin-top:36px;padding-top:24px;border-top:1px solid #1e2d5a;">
+      <p style="margin:0 0 4px;color:#94a3b8;font-size:14px;">Regards,</p>
+      <p style="margin:0 0 2px;color:#e2e8f0;font-size:15px;font-weight:700;">SmartLink Pilot Support</p>
+      <p style="margin:0;color:#6366f1;font-size:13px;">
+        <a href="mailto:support@smartlinkpilot.com" style="color:#6366f1;text-decoration:none;">support@smartlinkpilot.com</a>
+      </p>
+    </div>
+  `;
+
+  return {
+    subject: "Your SmartLink Pilot account has been removed",
+    html: layout(content),
+  };
+}
