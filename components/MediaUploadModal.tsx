@@ -52,13 +52,13 @@ export default function MediaUploadModal({ isOpen, type, onClose, onUploadFile, 
       <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
       
       {/* Glassmorphism Modal Frame */}
-      <div className="relative w-full max-w-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-3xl overflow-hidden transform transition-all">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-3xl overflow-hidden transform transition-all">
         
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-600/20 rounded-full blur-[60px] pointer-events-none mix-blend-screen"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-48 h-48 bg-purple-500/20 dark:bg-purple-600/20 rounded-full blur-[60px] pointer-events-none mix-blend-screen"></div>
 
-        <div className="relative z-10 p-6">
+        <div className="relative z-10 p-4 sm:p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               {type === "video" ? <Video className="text-indigo-500" /> : <ImageIcon className="text-purple-500" />} 
@@ -91,7 +91,7 @@ export default function MediaUploadModal({ isOpen, type, onClose, onUploadFile, 
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-medium animate-pulse">Processing high-fidelity upload...</p>
               </div>
             ) : activeTab === "upload" ? (
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-8 hover:bg-white/40 dark:hover:bg-gray-800/40 hover:border-indigo-500 transition-colors flex flex-col items-center justify-center group cursor-pointer relative">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-4 sm:p-8 hover:bg-white/40 dark:hover:bg-gray-800/40 hover:border-indigo-500 transition-colors flex flex-col items-center justify-center group cursor-pointer relative">
                 <input 
                   type="file" 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 

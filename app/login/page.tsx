@@ -40,8 +40,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 py-12 px-4 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-r from-blue-400/20 to-purple-400/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-l from-purple-400/20 to-pink-400/20 dark:from-purple-600/10 dark:to-pink-600/10 rounded-full blur-3xl translate-y-1/2 pointer-events-none"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] sm:w-[600px] lg:w-[800px] h-[300px] sm:h-[600px] lg:h-[800px] bg-gradient-to-r from-blue-400/20 to-purple-400/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-[200px] sm:w-[300px] lg:w-[400px] h-[200px] sm:h-[300px] lg:h-[400px] bg-gradient-to-l from-purple-400/20 to-pink-400/20 dark:from-purple-600/10 dark:to-pink-600/10 rounded-full blur-3xl translate-y-1/2 pointer-events-none"></div>
 
       <div className="relative max-w-md w-full">
         <div className="text-center mb-10">
@@ -55,7 +55,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl p-10 rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-black/30 border border-white/50 dark:border-gray-700/50">
+        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl p-5 sm:p-10 rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-black/30 border border-white/50 dark:border-gray-700/50">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               {isSignUp ? "Create Account" : "Welcome Back"}
@@ -74,7 +74,7 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             {isSignUp && (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
                     <div className="relative">

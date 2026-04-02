@@ -112,9 +112,9 @@ export default function DashboardPage() {
   return (
     <div className={`min-h-screen relative overflow-hidden transition-colors duration-500 ${isEnterprise ? "bg-amber-50/20 dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-950"}`}>
       {/* Animated Deep Glows */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/5 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/10 dark:bg-purple-600/5 rounded-full blur-[150px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
-      {isEnterprise && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-500/5 rounded-full blur-[180px] pointer-events-none"></div>}
+      <div className="absolute top-0 left-1/4 w-[200px] sm:w-[500px] h-[200px] sm:h-[500px] bg-indigo-500/10 dark:bg-indigo-600/5 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-[200px] sm:w-[600px] h-[200px] sm:h-[600px] bg-purple-500/10 dark:bg-purple-600/5 rounded-full blur-[150px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
+      {isEnterprise && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] sm:w-[800px] h-[200px] sm:h-[800px] bg-amber-500/5 rounded-full blur-[180px] pointer-events-none"></div>}
 
       <div className="max-w-6xl mx-auto px-4 py-12 relative z-10">
         {/* Header */}
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         {/* Glassmorphism Shell */}
         <div className="space-y-8">
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {[
               { label: "Total Links", value: urls.length, max: features.maxLinks === Infinity ? "∞" : features.maxLinks, icon: LinkIcon },
               { label: "Total Clicks", value: urls.reduce((sum: number, u: any) => sum + (u._count?.clicks || 0), 0), max: null, icon: Zap },
@@ -174,7 +174,7 @@ export default function DashboardPage() {
             ].map(s => (
               <div key={s.label} className="group relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-                <div className={`relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 ${isEnterprise ? "bg-white/80 dark:bg-amber-900/5 border-amber-200/40 dark:border-amber-800/20" : "bg-white/80 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800"}`}>
+                <div className={`relative p-3 sm:p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 ${isEnterprise ? "bg-white/80 dark:bg-amber-900/5 border-amber-200/40 dark:border-amber-800/20" : "bg-white/80 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800"}`}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">{s.label}</p>
                     <s.icon size={14} className="text-gray-300 dark:text-gray-700" />
@@ -190,13 +190,13 @@ export default function DashboardPage() {
           {/* Create Link Form */}
           <div className="relative group">
             <div className={`absolute -inset-0.5 bg-gradient-to-r ${isEnterprise ? "from-amber-500 to-yellow-500" : "from-indigo-500 to-purple-600"} rounded-[2rem] blur opacity-[0.07] group-hover:opacity-[0.12] transition duration-1000`}></div>
-            <div className={`relative p-8 rounded-[2rem] border backdrop-blur-2xl shadow-2xl ${isEnterprise ? "bg-white/90 dark:bg-gray-900/80 border-amber-200/50 dark:border-amber-900/30" : "bg-white/90 dark:bg-gray-900/80 border-gray-200 dark:border-gray-800"}`}>
-              <div className="flex items-center gap-3 mb-8">
+            <div className={`relative p-4 sm:p-8 rounded-[2rem] border backdrop-blur-2xl shadow-2xl ${isEnterprise ? "bg-white/90 dark:bg-gray-900/80 border-amber-200/50 dark:border-amber-900/30" : "bg-white/90 dark:bg-gray-900/80 border-gray-200 dark:border-gray-800"}`}>
+              <div className="flex items-center gap-3 mb-6 sm:mb-8">
                 <div className={`w-2 h-8 rounded-full ${isEnterprise ? "bg-amber-500" : "bg-indigo-600"}`}></div>
                 <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Generate Short Link</h2>
               </div>
-              <form onSubmit={shortenUrl} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <form onSubmit={shortenUrl} className="space-y-5 sm:space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Destination URL</label>
                     <input type="url" required className="w-full px-5 py-4 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-gray-50/50 dark:bg-black/20 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-sm font-medium shadow-inner" placeholder="https://example.com/long-url" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} />
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                 </div>
 
                 {isPro && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-widest ml-1 flex items-center gap-2">
                         <Lock size={12} /> Password Protection
@@ -270,7 +270,7 @@ export default function DashboardPage() {
 
           {/* Links Table */}
           <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] border border-gray-200 dark:border-gray-800 overflow-hidden shadow-2xl">
-            <div className="p-8 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <div className="p-4 sm:p-8 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <h3 className="font-black text-gray-900 dark:text-white text-lg tracking-tight">Global Links Archive</h3>
               <div className="px-4 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{urls.length} TOTAL</div>
             </div>
@@ -278,51 +278,51 @@ export default function DashboardPage() {
               <table className="w-full text-left">
                 <thead className="bg-gray-50/50 dark:bg-black/20 border-b border-gray-100 dark:border-gray-800">
                   <tr>
-                    <th className="p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1">Short Code</th>
-                    <th className="p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1">Destination</th>
-                    <th className="p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1 text-center">Engagement</th>
-                    <th className="p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1 text-right">Operational Tools</th>
+                    <th className="p-3 sm:p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Short Code</th>
+                    <th className="p-3 sm:p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] hidden sm:table-cell">Destination</th>
+                    <th className="p-3 sm:p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center hidden xs:table-cell">Clicks</th>
+                    <th className="p-3 sm:p-6 font-bold text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                   {urls.map((url) => (
                     <tr key={url.id} className="group hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-all duration-300">
-                      <td className="p-6">
+                      <td className="p-3 sm:p-6">
                         <div className="flex flex-col">
-                          <span className={`${isEnterprise ? "text-amber-600 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-400"} font-black text-base group-hover:underline cursor-pointer transition-all`}>/{url.shortCode}</span>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-600 font-mono mt-1 uppercase tracking-tighter">ID: {url.id.slice(-8)}</span>
+                          <span className={`${isEnterprise ? "text-amber-600 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-400"} font-black text-sm sm:text-base group-hover:underline cursor-pointer transition-all`}>/{url.shortCode}</span>
+                          <span className="text-[10px] text-gray-400 dark:text-gray-600 font-mono mt-1 uppercase tracking-tighter hidden sm:block">ID: {url.id.slice(-8)}</span>
                         </div>
                       </td>
-                      <td className="p-6">
-                        <div className="max-w-[300px]">
-                           <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate" title={url.originalUrl}>{url.originalUrl}</p>
-                           <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                             <ExternalLink size={10} /> Directly redirected
-                           </p>
+                      <td className="p-3 sm:p-6 hidden sm:table-cell">
+                        <div className="max-w-[200px] lg:max-w-[300px]">
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate" title={url.originalUrl}>{url.originalUrl}</p>
+                          <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <ExternalLink size={10} /> Directly redirected
+                          </p>
                         </div>
                       </td>
-                      <td className="p-6 text-center">
+                      <td className="p-3 sm:p-6 text-center hidden xs:table-cell">
                         <div className="inline-flex flex-col items-center">
-                          <span className="text-xl font-black text-gray-900 dark:text-white">{url._count?.clicks || 0}</span>
+                          <span className="text-lg sm:text-xl font-black text-gray-900 dark:text-white">{url._count?.clicks || 0}</span>
                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Clicks</span>
                         </div>
                       </td>
-                      <td className="p-6 text-right">
-                        <div className="flex justify-end gap-3 opacity-40 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                          <button onClick={() => copyLink(url.shortCode)} className="p-3 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl transition-all hover:scale-110 active:scale-95" title="Copy URL">
-                            {copied === url.shortCode ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                      <td className="p-3 sm:p-6 text-right">
+                        <div className="flex justify-end gap-1 sm:gap-3 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-all duration-300 sm:transform sm:translate-x-4 group-hover:translate-x-0">
+                          <button onClick={() => copyLink(url.shortCode)} className="p-2 sm:p-3 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl transition-all active:scale-95" title="Copy URL">
+                            {copied === url.shortCode ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
                           </button>
-                          <Link href={`/dashboard/analytics/${url.shortCode}`} className="p-3 text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl transition-all hover:scale-110 active:scale-95" title="Analytics Intelligence">
-                            <BarChart2 size={18} />
+                          <Link href={`/dashboard/analytics/${url.shortCode}`} className="p-2 sm:p-3 text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl transition-all active:scale-95" title="Analytics">
+                            <BarChart2 size={16} />
                           </Link>
-                          <Link href={`/dashboard/qr/${url.shortCode}`} className="p-3 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl transition-all hover:scale-110 active:scale-95" title="QR Strategy Asset">
-                            <QrCode size={18} />
+                          <Link href={`/dashboard/qr/${url.shortCode}`} className="p-2 sm:p-3 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl transition-all active:scale-95 hidden sm:flex" title="QR Code">
+                            <QrCode size={16} />
                           </Link>
-                          <a href={`/${url.shortCode}`} target="_blank" className="p-3 text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl transition-all hover:scale-110 active:scale-95" title="Visit Live Link">
-                            <ExternalLink size={18} />
+                          <a href={`/${url.shortCode}`} target="_blank" className="p-2 sm:p-3 text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl transition-all active:scale-95 hidden sm:flex" title="Visit Link">
+                            <ExternalLink size={16} />
                           </a>
-                          <button onClick={() => deleteUrl(url.id)} className="p-3 text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl transition-all hover:scale-110 active:scale-95" title="Decommission Link">
-                            <Trash2 size={18} />
+                          <button onClick={() => deleteUrl(url.id)} className="p-2 sm:p-3 text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl transition-all active:scale-95" title="Delete">
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
