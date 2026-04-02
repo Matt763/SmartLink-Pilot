@@ -91,25 +91,33 @@ const plans = [
 ];
 
 export default function PricingPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const subscribe = async (planName: string) => {
+    if (status === "loading") return;
     if (!session) {
-      window.location.href = "/login";
+      window.location.href = `/login?callbackUrl=/pricing`;
       return;
     }
     setLoading(planName);
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planName }),
-    });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Error initiating checkout. Please try again.");
+    setError(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Could not initiate checkout. Please try again.");
+        setLoading(null);
+      }
+    } catch {
+      setError("Network error. Please check your connection and try again.");
       setLoading(null);
     }
   };
@@ -126,6 +134,13 @@ export default function PricingPage() {
             Start free, upgrade as you grow. No hidden fees, cancel anytime.
           </p>
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="max-w-xl mx-auto mb-8 flex items-center gap-3 px-5 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
+            <span className="font-semibold">Checkout error:</span> {error}
+          </div>
+        )}
 
         {/* Cards */}
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-start">

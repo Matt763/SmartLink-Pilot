@@ -5,6 +5,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Adapter } from "next-auth/adapters";
+import { sendEmail, SENDERS } from "@/lib/resend";
+import { welcomeEmailTemplate } from "@/lib/email-templates";
 
 const CEO_EMAIL = "mclean@smartlinkpilot.com";
 
@@ -38,9 +40,38 @@ function buildAdapter(): Adapter {
           ? "mcleanmbaga"
           : generateUsername(data.name || "", data.email || "");
       const username = await getUniqueUsername(baseUsername);
-      return prisma.user.create({
+
+      const user = await prisma.user.create({
         data: { ...data, username, role },
       });
+
+      // Send welcome email + subscribe to newsletter for all new non-CEO users
+      if (user.email && user.email !== CEO_EMAIL) {
+        try {
+          const { subject, html } = welcomeEmailTemplate(user.name ?? username, username);
+          await sendEmail({
+            from: SENDERS.founder,
+            to: user.email,
+            subject,
+            html,
+            replyTo: "support@smartlinkpilot.com",
+          });
+        } catch (err) {
+          console.error("[Auth] Google welcome email failed:", err);
+        }
+
+        try {
+          await prisma.newsletterSubscriber.upsert({
+            where: { email: user.email },
+            update: { subscribed: true, name: user.name ?? undefined },
+            create: { email: user.email, name: user.name ?? undefined },
+          });
+        } catch (err) {
+          console.error("[Auth] Google newsletter subscribe failed:", err);
+        }
+      }
+
+      return user;
     },
   };
 }

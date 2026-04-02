@@ -15,20 +15,28 @@ const PLAN_CONFIG: Record<string, { amount: number; description: string }> = {
   },
 };
 
+const CORRECT_IPN_URL = `${process.env.NEXTAUTH_URL}/api/pesapal/ipn`;
+
 /** Get or register the Pesapal IPN notification ID (cached in DB). */
 async function getNotificationId(token: string): Promise<string> {
+  // Check cached value — but also verify it was registered with the correct URL.
+  // We store "ipnId|ipnUrl" so we can detect when the URL has changed.
   const setting = await prisma.siteSetting.findUnique({
     where: { key: "pesapal_ipn_id" },
   });
-  if (setting?.value) return setting.value;
 
-  const ipnUrl = `${process.env.NEXTAUTH_URL}/api/stripe/webhook`;
-  const ipnId = await registerIPN(token, ipnUrl);
+  if (setting?.value) {
+    const [cachedId, cachedUrl] = setting.value.split("|");
+    // Re-register only if the URL changed (e.g. old code used /api/stripe/webhook)
+    if (cachedId && cachedUrl === CORRECT_IPN_URL) return cachedId;
+  }
+
+  const ipnId = await registerIPN(token, CORRECT_IPN_URL);
 
   await prisma.siteSetting.upsert({
     where: { key: "pesapal_ipn_id" },
-    create: { key: "pesapal_ipn_id", value: ipnId },
-    update: { value: ipnId },
+    create: { key: "pesapal_ipn_id", value: `${ipnId}|${CORRECT_IPN_URL}` },
+    update: { value: `${ipnId}|${CORRECT_IPN_URL}` },
   });
 
   return ipnId;
