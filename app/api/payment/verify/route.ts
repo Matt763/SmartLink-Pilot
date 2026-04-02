@@ -13,14 +13,27 @@ function nextPeriodEnd(): Date {
   return d;
 }
 
+/** Resolve userId + planName from our DB using the merchant reference (orderId). */
+async function resolveOrder(
+  merchantRef: string
+): Promise<{ userId: string; planName: string } | null> {
+  const setting = await prisma.siteSetting.findUnique({
+    where: { key: `order_${merchantRef}` },
+  });
+  if (!setting) return null;
+  const [userId, planName] = setting.value.split("|");
+  if (!userId || !planName) return null;
+  return { userId, planName };
+}
+
 /**
- * Pesapal redirects here after payment with query params:
- *   OrderTrackingId, OrderMerchantReference, OrderNotificationType
+ * Pesapal redirects here after the user completes or cancels payment.
+ * Query params: OrderTrackingId, OrderMerchantReference, OrderNotificationType
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const trackingId = searchParams.get("OrderTrackingId");
-  const merchantRef = searchParams.get("OrderMerchantReference"); // our orderId
+  const merchantRef = searchParams.get("OrderMerchantReference") || "";
   const base = process.env.NEXTAUTH_URL || "https://www.smartlinkpilot.com";
 
   if (!trackingId) {
@@ -28,34 +41,33 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Verify transaction status with Pesapal
     const token = await getToken();
     const status = await getTransactionStatus(token, trackingId);
 
-    // Pesapal payment_status_description: "Completed" on success
     if (
       status.payment_status_description !== "Completed" &&
       status.status_code !== 1
     ) {
-      console.error("Payment not completed:", status);
+      console.error("Payment not completed:", JSON.stringify(status));
       return NextResponse.redirect(`${base}/pricing?error=payment_failed`);
     }
 
-    // Decode planName and userId from merchantRef: "slp-{plan}-{userId}"
-    const parts = (merchantRef || "").split("-");
-    // Format: slp - pro - cuid (cuid has no hyphens in the middle for our format)
-    // parts[0] = "slp", parts[1] = planName, parts[2..] = userId
-    const planName = parts[1] || "pro";
-    const userId = parts.slice(2).join("-"); // rejoin in case userId had hyphens
+    // Look up userId + planName from DB
+    const order = await resolveOrder(merchantRef);
 
-    if (!userId) {
-      console.error("Could not extract userId from ref:", merchantRef);
-      return NextResponse.redirect(`${base}/pricing?error=no_user`);
+    if (!order) {
+      console.error("Order not found in DB for ref:", merchantRef);
+      return NextResponse.redirect(`${base}/pricing?error=order_not_found`);
     }
 
+    const { userId, planName } = order;
     const role = ROLE_MAP[planName] || "premium_user";
 
+    // Update user role
     await prisma.user.update({ where: { id: userId }, data: { role } });
 
+    // Update subscription record
     await prisma.subscription.upsert({
       where: { userId },
       create: {
@@ -72,6 +84,9 @@ export async function GET(req: Request) {
         status: "active",
       },
     });
+
+    // Clean up the temporary order record
+    await prisma.siteSetting.deleteMany({ where: { key: `order_${merchantRef}` } });
 
     return NextResponse.redirect(
       `${base}/dashboard?upgrade=success&plan=${planName}`

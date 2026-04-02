@@ -7,15 +7,15 @@ import { getToken, registerIPN, submitOrder } from "@/lib/pesapal";
 const PLAN_CONFIG: Record<string, { amount: number; description: string }> = {
   pro: {
     amount: 6.99,
-    description: "SmartLink Pilot Pro — Unlimited links, analytics & QR codes",
+    description: "SmartLink Pilot Pro - Unlimited links, analytics and QR codes",
   },
   enterprise: {
     amount: 12.99,
-    description: "SmartLink Pilot Enterprise — Full API, team workspaces & more",
+    description: "SmartLink Pilot Enterprise - Full API access and team workspaces",
   },
 };
 
-/** Get or create the Pesapal IPN notification ID (stored in DB to avoid re-registering). */
+/** Get or register the Pesapal IPN notification ID (cached in DB). */
 async function getNotificationId(token: string): Promise<string> {
   const setting = await prisma.siteSetting.findUnique({
     where: { key: "pesapal_ipn_id" },
@@ -47,17 +47,23 @@ export async function POST(req: Request) {
 
     // Fall back to mock checkout when Pesapal is not configured
     if (!process.env.PESAPAL_CONSUMER_KEY || !process.env.PESAPAL_CONSUMER_SECRET) {
-      return NextResponse.json({
-        url: `/mock-checkout?plan=${resolvedPlan}`,
-      });
+      return NextResponse.json({ url: `/mock-checkout?plan=${resolvedPlan}` });
     }
 
     const token = await getToken();
     const notificationId = await getNotificationId(token);
 
-    // Encode userId + planName into the order ID so we can recover it on callback
-    // Format: slp-{planName}-{userId} (Pesapal accepts alphanumeric + hyphens)
-    const orderId = `slp-${resolvedPlan}-${session.user.id}`;
+    // Generate a unique order ID every time using base36 timestamp.
+    // This prevents Pesapal from rejecting duplicate order IDs on retries.
+    const orderId = `slp${Date.now().toString(36)}`;
+
+    // Store userId + planName in DB keyed by orderId so we can recover it
+    // in the callback without embedding it in the order ID.
+    await prisma.siteSetting.upsert({
+      where: { key: `order_${orderId}` },
+      create: { key: `order_${orderId}`, value: `${session.user.id}|${resolvedPlan}` },
+      update: { value: `${session.user.id}|${resolvedPlan}` },
+    });
 
     const nameParts = (session.user.name || "User").trim().split(" ");
     const firstName = nameParts[0] || "User";
@@ -76,14 +82,16 @@ export async function POST(req: Request) {
     });
 
     if (!result.redirect_url) {
-      console.error("Pesapal order error:", result);
+      // Clean up the stored order if Pesapal rejected it
+      await prisma.siteSetting.deleteMany({ where: { key: `order_${orderId}` } });
+      console.error("Pesapal order error:", JSON.stringify(result));
       return NextResponse.json(
-        { error: result.error?.message || "Could not create payment link" },
+        { error: result.error?.message || result.message || "Could not create payment link" },
         { status: 500 }
       );
     }
 
-    // Save pending subscription
+    // Save pending subscription record
     await prisma.subscription.upsert({
       where: { userId: session.user.id },
       create: { userId: session.user.id, status: "pending" },
