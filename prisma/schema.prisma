@@ -199,6 +199,39 @@ model AppConfig {
   updatedAt DateTime @updatedAt
 }
 
+/// Tracks anonymous visitor sessions for the admin analytics dashboard
+model VisitorSession {
+  id        String     @id @default(cuid())
+  sessionId String     @unique
+  ip        String?
+  country   String?
+  city      String?
+  device    String?    // "mobile" | "tablet" | "desktop"
+  browser   String?
+  os        String?
+  referrer  String?
+  source    String?    // "Google" | "Direct" | "Facebook" | domain etc.
+  duration  Int        @default(0)  // total seconds on site
+  pageViews PageView[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([createdAt])
+}
+
+/// Individual page visits within a VisitorSession
+model PageView {
+  id        String         @id @default(cuid())
+  sessionId String
+  path      String
+  duration  Int            @default(0)
+  createdAt DateTime       @default(now())
+  session   VisitorSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
 /// Stores published articles for the AI-driven blog engine
 model BlogPost {
   id             String   @id @default(cuid())

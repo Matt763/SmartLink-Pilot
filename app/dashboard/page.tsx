@@ -164,10 +164,15 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="p-1 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-xl border border-white/20 shadow-sm flex items-center">
               <SubscriptionBadge role={role} />
             </div>
+            {role === "admin" && (
+              <Link href="/admin" className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-amber-400/40 transition hover:scale-105">
+                <Crown size={13} /> Admin Panel
+              </Link>
+            )}
             {!isPro && (
               <Link href="/pricing" className="group relative inline-flex items-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black text-sm font-bold rounded-xl transition hover:scale-105 active:scale-95 shadow-xl">
                 <Zap size={14} className="group-hover:animate-bounce" />

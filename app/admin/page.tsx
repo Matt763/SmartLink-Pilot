@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Crown, Users, Link as LinkIcon, Settings, Shield, DollarSign, FileText, PenTool, UserPlus, Mail, Lock, Trash2, Edit, ChevronDown, ChevronRight, Globe, BarChart2, Code, MessageCircle, Bell, Bot, CheckCircle, AlertCircle, Loader2, Smartphone, Save, RefreshCw, ExternalLink, Sparkles } from "lucide-react";
+import { Crown, Users, Link as LinkIcon, Settings, Shield, DollarSign, FileText, PenTool, UserPlus, Mail, Lock, Trash2, Edit, ChevronDown, ChevronRight, Globe, BarChart2, Code, MessageCircle, Bell, Bot, CheckCircle, AlertCircle, Loader2, Smartphone, Save, RefreshCw, ExternalLink, Sparkles, Eye } from "lucide-react";
 import Link from "next/link";
 
 type Tab = "overview" | "users" | "links" | "team" | "site" | "content" | "appconfig" | "monetization" | "chats" | "settings";
@@ -206,6 +206,25 @@ export default function AdminPage() {
 
   const Spinner = () => <Loader2 size={14} className="animate-spin" />;
 
+  // ── Real stats state ──────────────────────────────────────────────────────
+  const [stats, setStats] = useState<{
+    totalUsers: number; totalLinks: number; totalClicks: number; mrr: number;
+    userGrowth: number; breakdown: { free: number; pro: number; enterprise: number };
+    revenueTrend: { month: string; val: number }[];
+    recentActivity: { type: string; text: string; time: string }[];
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "overview") return;
+    setStatsLoading(true);
+    fetch("/api/admin/stats")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setStats(d); })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
+  }, [activeTab]);
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -241,111 +260,127 @@ export default function AdminPage() {
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            {/* KPI Cards — real data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Total Users", value: "1,247", change: "+12%", color: "indigo" },
-                { label: "Total Links", value: "34,892", change: "+8%", color: "purple" },
-                { label: "Total Clicks", value: "2.4M", change: "+23%", color: "green" },
-                { label: "Revenue (MRR)", value: "$847", change: "+15%", color: "amber" },
+                { label: "Total Users",   value: stats ? stats.totalUsers.toLocaleString()  : "…", sub: stats ? `${stats.userGrowth > 0 ? "+" : ""}${stats.userGrowth}% this month` : "Loading…",  color: "indigo" },
+                { label: "Total Links",   value: stats ? stats.totalLinks.toLocaleString()  : "…", sub: "All-time short links",  color: "purple" },
+                { label: "Total Clicks",  value: stats ? stats.totalClicks >= 1000000 ? `${(stats.totalClicks/1000000).toFixed(1)}M` : stats.totalClicks.toLocaleString() : "…", sub: "All-time clicks", color: "green" },
+                { label: "Revenue (MRR)", value: stats ? `$${stats.mrr.toFixed(2)}` : "…",  sub: `${(stats?.breakdown.pro ?? 0)} Pro · ${(stats?.breakdown.enterprise ?? 0)} Enterprise`, color: "amber" },
               ].map(s => (
                 <div key={s.label} className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{s.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
-                  <p className="text-xs text-green-500 font-medium mt-1">{s.change} this month</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{statsLoading ? <span className="text-gray-400">…</span> : s.value}</p>
+                  <p className="text-xs text-gray-400 font-medium mt-1">{s.sub}</p>
                 </div>
               ))}
             </div>
 
-            {/* Quick Navigation: Dual Dashboard */}
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/10 dark:to-yellow-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">You also have an Enterprise user dashboard for managing your own links.</p>
-              <a href="/dashboard" className="px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-lg hover:from-amber-600 hover:to-yellow-600 transition shadow-sm whitespace-nowrap">Open My Dashboard →</a>
+            {/* Quick Navigation */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <a href="/dashboard" className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/10 dark:to-yellow-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl hover:shadow-md transition">
+                <Crown size={18} className="text-amber-500 flex-shrink-0" />
+                <div><p className="text-sm font-bold text-amber-900 dark:text-amber-200">My Enterprise Dashboard</p><p className="text-xs text-amber-700/60 dark:text-amber-400/60">Manage your personal links</p></div>
+              </a>
+              <Link href="/admin/blog" className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200/50 dark:border-indigo-800/30 rounded-xl hover:shadow-md transition">
+                <Sparkles size={18} className="text-indigo-500 flex-shrink-0" />
+                <div><p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Blog CMS</p><p className="text-xs text-indigo-700/60 dark:text-indigo-400/60">Write & manage posts</p></div>
+              </Link>
+              <Link href="/admin/visitors" className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/10 border border-green-200/50 dark:border-green-800/30 rounded-xl hover:shadow-md transition">
+                <Eye size={18} className="text-green-500 flex-shrink-0" />
+                <div><p className="text-sm font-bold text-green-900 dark:text-green-200">Visitor Analytics</p><p className="text-xs text-green-700/60 dark:text-green-400/60">Live traffic & audience</p></div>
+              </Link>
             </div>
 
-            {/* Income Trend Chart */}
+            {/* Income Trend Chart — real data */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white">Subscription Income Trend</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Monthly recurring revenue from Pro & Enterprise</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Monthly recurring revenue — Pro & Enterprise subscribers</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">$847</p>
-                  <p className="text-xs text-green-500">+15% vs last month</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats ? `$${stats.mrr.toFixed(2)}` : "…"}</p>
+                  <p className="text-xs text-gray-400">Current MRR</p>
                 </div>
               </div>
-              {/* SVG Bar Chart */}
-              <div className="relative">
-                <svg viewBox="0 0 720 200" className="w-full h-48" preserveAspectRatio="none">
-                  {/* Grid lines */}
-                  {[0, 1, 2, 3, 4].map(i => (
-                    <line key={`grid-${i}`} x1="0" y1={i * 50} x2="720" y2={i * 50} stroke="currentColor" className="text-gray-100 dark:text-gray-700" strokeWidth="1" />
-                  ))}
-                  {/* Bars */}
-                  {[
-                    { month: "Apr", val: 120 }, { month: "May", val: 180 }, { month: "Jun", val: 250 },
-                    { month: "Jul", val: 310 }, { month: "Aug", val: 380 }, { month: "Sep", val: 420 },
-                    { month: "Oct", val: 470 }, { month: "Nov", val: 530 }, { month: "Dec", val: 590 },
-                    { month: "Jan", val: 650 }, { month: "Feb", val: 740 }, { month: "Mar", val: 847 },
-                  ].map((item, i) => {
-                    const barHeight = (item.val / 900) * 180;
-                    const x = i * 60 + 5;
-                    const isLast = i === 11;
-                    return (
-                      <g key={item.month}>
-                        <rect x={x} y={200 - barHeight} width="50" height={barHeight} rx="6" fill={isLast ? "url(#goldGrad)" : "url(#indigoGrad)"} opacity={isLast ? 1 : 0.7 + (i * 0.025)} />
-                        <text x={x + 25} y="198" textAnchor="middle" className="text-[10px] fill-gray-400 dark:fill-gray-500" fontWeight="600">{item.month}</text>
-                      </g>
-                    );
-                  })}
-                  <defs>
-                    <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#818cf8" />
-                      <stop offset="100%" stopColor="#6366f1" />
-                    </linearGradient>
-                    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#fbbf24" />
-                      <stop offset="100%" stopColor="#f59e0b" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-              <div className="flex gap-4 mt-4 text-xs text-gray-400">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-indigo-500 rounded-sm"></div> Pro Revenue</div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500 rounded-sm"></div> Enterprise Revenue</div>
-              </div>
+              {stats && stats.revenueTrend.length > 0 ? (() => {
+                const maxVal = Math.max(...stats.revenueTrend.map(t => t.val), 1);
+                return (
+                  <div className="relative">
+                    <svg viewBox="0 0 720 200" className="w-full h-48" preserveAspectRatio="none">
+                      {[0,1,2,3,4].map(i => <line key={i} x1="0" y1={i*50} x2="720" y2={i*50} stroke="currentColor" className="text-gray-100 dark:text-gray-700" strokeWidth="1" />)}
+                      {stats.revenueTrend.map((item, i) => {
+                        const barH = Math.max(4, (item.val / maxVal) * 180);
+                        const x = i * 60 + 5;
+                        const isLast = i === stats.revenueTrend.length - 1;
+                        return (
+                          <g key={item.month}>
+                            <rect x={x} y={200 - barH} width="50" height={barH} rx="6" fill={isLast ? "url(#goldGrad)" : "url(#indigoGrad)"} opacity={isLast ? 1 : 0.65 + i * 0.03} />
+                            <text x={x+25} y="198" textAnchor="middle" className="text-[10px] fill-gray-400" fontWeight="600">{item.month}</text>
+                          </g>
+                        );
+                      })}
+                      <defs>
+                        <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
+                        <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                );
+              })() : <div className="h-48 flex items-center justify-center text-sm text-gray-400">No subscription data yet</div>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Recent Activity — real data */}
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                 <div className="space-y-3">
-                  {["New user signup: john@example.com", "Pro upgrade: aisha@gmail.com", "Link created: /promo-2026", "100k clicks milestone reached"].map(a => (
-                    <div key={a} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 py-2 border-b border-gray-50 dark:border-gray-700 last:border-0">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div> {a}
+                  {stats && stats.recentActivity.length > 0 ? stats.recentActivity.map((a, i) => (
+                    <div key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300 py-2 border-b border-gray-50 dark:border-gray-700 last:border-0">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${a.type === "signup" ? "bg-green-500" : a.type === "upgrade" ? "bg-amber-500" : "bg-indigo-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">{a.text}</p>
+                        <p className="text-xs text-gray-400">{new Date(a.time).toLocaleString()}</p>
+                      </div>
                     </div>
-                  ))}
+                  )) : statsLoading ? (
+                    <p className="text-sm text-gray-400">Loading activity…</p>
+                  ) : (
+                    <p className="text-sm text-gray-400">No recent activity yet.</p>
+                  )}
                 </div>
               </div>
+
+              {/* Subscription Breakdown — real data */}
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">Subscription Breakdown</h3>
-                <div className="space-y-4">
-                  {[
-                    { plan: "Free", count: 980, pct: 78, color: "bg-gray-300 dark:bg-gray-600" },
-                    { plan: "Pro ($6.99)", count: 210, pct: 17, color: "bg-indigo-500" },
-                    { plan: "Enterprise ($12.99)", count: 57, pct: 5, color: "bg-amber-500" },
-                  ].map(p => (
-                    <div key={p.plan}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-700 dark:text-gray-300 font-medium">{p.plan}</span>
-                        <span className="text-gray-400">{p.count} users ({p.pct}%)</span>
-                      </div>
-                      <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div className={`h-full ${p.color} rounded-full transition-all`} style={{ width: `${p.pct}%` }}></div>
-                      </div>
+                {stats ? (() => {
+                  const total = stats.totalUsers || 1;
+                  const plans = [
+                    { plan: "Free", count: stats.breakdown.free,       color: "bg-gray-300 dark:bg-gray-600" },
+                    { plan: "Pro ($6.99/mo)",  count: stats.breakdown.pro,        color: "bg-indigo-500" },
+                    { plan: "Enterprise ($12.99/mo)", count: stats.breakdown.enterprise, color: "bg-amber-500" },
+                  ];
+                  return (
+                    <div className="space-y-4">
+                      {plans.map(p => {
+                        const pct = Math.round((p.count / total) * 100);
+                        return (
+                          <div key={p.plan}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{p.plan}</span>
+                              <span className="text-gray-400">{p.count} users ({pct}%)</span>
+                            </div>
+                            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div className={`h-full ${p.color} rounded-full transition-all`} style={{ width: `${Math.max(pct, 1)}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
+                  );
+                })() : <p className="text-sm text-gray-400">Loading…</p>}
               </div>
             </div>
           </div>
