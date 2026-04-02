@@ -54,38 +54,35 @@ export async function POST(req: Request) {
       const wordCount = post.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
       const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
-      // Fire-and-forget — don't delay the API response
-      (async () => {
-        try {
-          const subscribers = await prisma.newsletterSubscriber.findMany({
-            where: { subscribed: true },
-            select: { email: true, name: true, token: true },
+      try {
+        const subscribers = await prisma.newsletterSubscriber.findMany({
+          where: { subscribed: true },
+          select: { email: true, name: true, token: true },
+        });
+
+        for (const subscriber of subscribers) {
+          const { subject, html } = newsletterPostEmailTemplate({
+            subscriberName: subscriber.name ?? undefined,
+            postTitle: post.title,
+            postExcerpt: post.excerpt,
+            postSlug: post.slug,
+            featuredImage: post.featuredImage,
+            readTime,
+            unsubscribeToken: subscriber.token,
           });
 
-          for (const subscriber of subscribers) {
-            const { subject, html } = newsletterPostEmailTemplate({
-              subscriberName: subscriber.name ?? undefined,
-              postTitle: post.title,
-              postExcerpt: post.excerpt,
-              postSlug: post.slug,
-              featuredImage: post.featuredImage,
-              readTime,
-              unsubscribeToken: subscriber.token,
-            });
-
-            await sendEmail({
-              from: SENDERS.info,
-              to: subscriber.email,
-              subject,
-              html,
-            });
-          }
-
-          console.log(`[Newsletter] Dispatched post "${post.title}" to ${subscribers.length} subscribers.`);
-        } catch (err) {
-          console.error("[Newsletter] Dispatch error:", err);
+          await sendEmail({
+            from: SENDERS.info,
+            to: subscriber.email,
+            subject,
+            html,
+          });
         }
-      })();
+
+        console.log(`[Newsletter] Dispatched post "${post.title}" to ${subscribers.length} subscribers.`);
+      } catch (err) {
+        console.error("[Newsletter] Dispatch error:", err);
+      }
     }
 
     return NextResponse.json(post);

@@ -111,24 +111,30 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send welcome email (fire-and-forget — don't block signup on email failure)
-    const { subject, html } = welcomeEmailTemplate(user.name ?? finalUsername, finalUsername);
-    sendEmail({
-      from: SENDERS.founder,
-      to: email,
-      subject,
-      html,
-      replyTo: "support@smartlinkpilot.com",
-    }).catch((err) => console.error("[Signup] Welcome email failed:", err));
+    // Send welcome email — awaited so Vercel doesn't kill it before delivery
+    try {
+      const { subject, html } = welcomeEmailTemplate(user.name ?? finalUsername, finalUsername);
+      await sendEmail({
+        from: SENDERS.founder,
+        to: email,
+        subject,
+        html,
+        replyTo: "support@smartlinkpilot.com",
+      });
+    } catch (err) {
+      console.error("[Signup] Welcome email failed:", err);
+    }
 
-    // Auto-subscribe to newsletter (upsert so repeat signups don't error)
-    prisma.newsletterSubscriber
-      .upsert({
+    // Auto-subscribe to newsletter
+    try {
+      await prisma.newsletterSubscriber.upsert({
         where: { email },
         update: { subscribed: true, name: user.name ?? undefined },
         create: { email, name: user.name ?? undefined },
-      })
-      .catch((err) => console.error("[Signup] Newsletter subscribe failed:", err));
+      });
+    } catch (err) {
+      console.error("[Signup] Newsletter subscribe failed:", err);
+    }
 
     return NextResponse.json(
       { message: "Account created successfully", userId: user.id, username: finalUsername },
