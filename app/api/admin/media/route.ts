@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/auth";
 import fs from "fs/promises";
 import path from "path";
 import { compressImage, isImageMime, isVideoMime } from "@/lib/compress";
+import { uploadVideoToCloudinary } from "@/lib/cloudinary";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB raw — sharp will shrink it down
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB raw — sharp will shrink it
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
 
 export async function POST(req: Request) {
@@ -43,39 +44,52 @@ export async function POST(req: Request) {
     }
 
     const bytes = await file.arrayBuffer();
-    let buffer = Buffer.from(bytes);
-
-    let ext = path.extname(file.name);
+    const buffer = Buffer.from(bytes);
     const originalBytes = buffer.length;
 
-    // Compress images server-side with sharp → WebP
+    // ── Images: compress with sharp → WebP, store locally ──────────────────
     if (isImage) {
       const result = await compressImage(buffer);
-      buffer = result.buffer;
-      ext = result.ext;
+      const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${result.ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+      try { await fs.mkdir(uploadDir, { recursive: true }); } catch {}
+
+      await fs.writeFile(path.join(uploadDir, uniqueFilename), result.buffer);
+
+      const savedKB = Math.round((originalBytes - result.buffer.length) / 1024);
       console.log(
-        `[MEDIA_UPLOAD] Image compressed: ${(originalBytes / 1024).toFixed(1)} KB → ${(buffer.length / 1024).toFixed(1)} KB`
+        `[MEDIA_UPLOAD] Image: ${(originalBytes / 1024).toFixed(1)} KB → ${(result.buffer.length / 1024).toFixed(1)} KB`
       );
+
+      return NextResponse.json({ url: `/uploads/${uniqueFilename}`, savedKB, type: "image" });
     }
 
-    const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    // ── Videos: upload to Cloudinary for cloud transcoding ─────────────────
+    const cloudinaryConfigured =
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET;
 
-    try {
-      await fs.mkdir(uploadDir, { recursive: true });
-    } catch (e) {
-      console.warn("Upload dir creation skipped or failed", e);
+    if (!cloudinaryConfigured) {
+      // Fallback: store locally if Cloudinary is not configured
+      const ext = path.extname(file.name);
+      const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+      try { await fs.mkdir(uploadDir, { recursive: true }); } catch {}
+
+      await fs.writeFile(path.join(uploadDir, uniqueFilename), buffer);
+      console.warn("[MEDIA_UPLOAD] Cloudinary not configured — video stored locally.");
+
+      return NextResponse.json({ url: `/uploads/${uniqueFilename}`, savedKB: 0, type: "video" });
     }
 
-    const filePath = path.join(uploadDir, uniqueFilename);
-    await fs.writeFile(filePath, buffer);
+    console.log(`[MEDIA_UPLOAD] Uploading video (${(originalBytes / 1024 / 1024).toFixed(1)} MB) to Cloudinary…`);
+    const videoUrl = await uploadVideoToCloudinary(buffer, file.name);
+    console.log(`[MEDIA_UPLOAD] Video ready: ${videoUrl}`);
 
-    const url = `/uploads/${uniqueFilename}`;
-    const savedKB = isImage
-      ? Math.round((originalBytes - buffer.length) / 1024)
-      : 0;
-
-    return NextResponse.json({ url, savedKB });
+    return NextResponse.json({ url: videoUrl, savedKB: 0, type: "video" });
   } catch (error: any) {
     console.error("[MEDIA_UPLOAD_API]", error);
     return new NextResponse("Internal failure processing media", { status: 500 });

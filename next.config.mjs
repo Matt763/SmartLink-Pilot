@@ -17,6 +17,8 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: '*.googleusercontent.com' },
+      // Cloudinary — video thumbnails and optimised images
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
   },
 

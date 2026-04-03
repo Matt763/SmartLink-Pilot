@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import {
   Sparkles, Plus, Loader2, Save, Trash2, ArrowLeft, Zap,
-  Eye, EyeOff, RotateCcw, Check, Image as ImageIcon, Youtube
+  Eye, EyeOff, RotateCcw, Check, Image as ImageIcon, Youtube, Upload
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/RichTextEditor";
+import MediaUploadModal from "@/components/MediaUploadModal";
 
 interface BlogPost {
   id: string;
@@ -39,8 +40,19 @@ export default function AdminBlogManager() {
   const [massGenActive, setMassGenActive] = useState(false);
   const [massGenProgress, setMassGenProgress] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   useEffect(() => { fetchPosts(); }, []);
+
+  const handleFeaturedImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/admin/media", { method: "POST", body: formData });
+    if (!res.ok) throw new Error("Upload failed");
+    const { url } = await res.json();
+    setActivePost(prev => ({ ...prev, featuredImage: url }));
+    setImageModalOpen(false);
+  };
 
   const fetchPosts = async () => {
     try {
@@ -377,14 +389,24 @@ export default function AdminBlogManager() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      <ImageIcon size={13} /> Featured Image URL
+                      <ImageIcon size={13} /> Featured Image
                     </label>
-                    <input
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                      placeholder="https://example.com/image.jpg"
-                      value={activePost.featuredImage || ""}
-                      onChange={e => setActivePost({ ...activePost, featuredImage: e.target.value })}
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                        placeholder="https://example.com/image.jpg"
+                        value={activePost.featuredImage || ""}
+                        onChange={e => setActivePost({ ...activePost, featuredImage: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setImageModalOpen(true)}
+                        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700 rounded-xl text-sm font-semibold transition"
+                        title="Upload image"
+                      >
+                        <Upload size={15} /> Upload
+                      </button>
+                    </div>
                     {activePost.featuredImage && (
                       <img src={activePost.featuredImage} alt="Preview" className="mt-2 h-20 w-auto rounded-lg object-cover border border-gray-200 dark:border-gray-700" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     )}
@@ -547,6 +569,17 @@ export default function AdminBlogManager() {
           </div>
         )}
       </div>
+
+      <MediaUploadModal
+        isOpen={imageModalOpen}
+        type="image"
+        onClose={() => setImageModalOpen(false)}
+        onUploadFile={handleFeaturedImageUpload}
+        onEmbedLink={(link) => {
+          setActivePost(prev => ({ ...prev, featuredImage: link }));
+          setImageModalOpen(false);
+        }}
+      />
     </div>
   );
 }
