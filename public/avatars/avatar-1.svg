@@ -1,0 +1,36 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg1" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1a0010"/>
+      <stop offset="100%" stop-color="#0a0008"/>
+    </radialGradient>
+    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff0000" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ff0000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="url(#bg1)"/>
+  <circle cx="50" cy="50" r="50" fill="url(#glow1)"/>
+  <!-- Helmet dome -->
+  <ellipse cx="50" cy="38" rx="22" ry="24" fill="#111111"/>
+  <!-- Helmet top ridge -->
+  <rect x="44" y="14" width="12" height="8" rx="3" fill="#1a1a1a"/>
+  <!-- Breathing mask -->
+  <rect x="34" y="55" width="32" height="18" rx="4" fill="#0d0d0d"/>
+  <!-- Mask vents -->
+  <rect x="37" y="59" width="8" height="3" rx="1" fill="#222"/>
+  <rect x="55" y="59" width="8" height="3" rx="1" fill="#222"/>
+  <rect x="37" y="64" width="8" height="3" rx="1" fill="#222"/>
+  <rect x="55" y="64" width="8" height="3" rx="1" fill="#222"/>
+  <!-- Red eye lenses -->
+  <ellipse cx="41" cy="42" rx="5" ry="4" fill="#cc0000"/>
+  <ellipse cx="59" cy="42" rx="5" ry="4" fill="#cc0000"/>
+  <ellipse cx="41" cy="42" rx="3" ry="2.5" fill="#ff2200"/>
+  <ellipse cx="59" cy="42" rx="3" ry="2.5" fill="#ff2200"/>
+  <!-- Lightsaber glow at bottom -->
+  <rect x="46" y="78" width="8" height="18" rx="4" fill="#ff0000" opacity="0.8"/>
+  <rect x="47" y="78" width="6" height="18" rx="3" fill="#ff6666"/>
+  <!-- Chin collar -->
+  <rect x="36" y="72" width="28" height="5" rx="2" fill="#1a1a1a"/>
+</svg>

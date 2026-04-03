@@ -1,0 +1,43 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg9" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </radialGradient>
+    <radialGradient id="lightning" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bg9)"/>
+  <!-- Speed aura lines -->
+  <line x1="5" y1="35" x2="22" y2="35" stroke="#fbbf24" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <line x1="2" y1="45" x2="20" y2="45" stroke="#fbbf24" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+  <line x1="5" y1="55" x2="22" y2="55" stroke="#fbbf24" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <line x1="78" y1="35" x2="95" y2="35" stroke="#fbbf24" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <line x1="80" y1="45" x2="98" y2="45" stroke="#fbbf24" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+  <line x1="78" y1="55" x2="95" y2="55" stroke="#fbbf24" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <!-- Red cowl/mask -->
+  <ellipse cx="50" cy="46" rx="24" ry="26" fill="#dc2626"/>
+  <!-- Cowl crown top -->
+  <path d="M30 32 Q50 20 70 32 Q68 26 50 22 Q32 22 30 32 Z" fill="#b91c1c"/>
+  <!-- Gold/yellow ear wings -->
+  <path d="M26 36 L18 28 L24 40 L28 40 Z" fill="#facc15"/>
+  <path d="M74 36 L82 28 L76 40 L72 40 Z" fill="#facc15"/>
+  <!-- White eye lenses -->
+  <ellipse cx="38" cy="46" rx="8" ry="6.5" fill="white"/>
+  <ellipse cx="62" cy="46" rx="8" ry="6.5" fill="white"/>
+  <ellipse cx="38" cy="46" rx="5" ry="4.5" fill="#e2e8f0"/>
+  <ellipse cx="62" cy="46" rx="5" ry="4.5" fill="#e2e8f0"/>
+  <!-- Chin strap -->
+  <path d="M28 56 Q50 68 72 56 L70 64 Q50 74 30 64 Z" fill="#b91c1c"/>
+  <!-- Lightning bolt emblem on forehead -->
+  <path d="M53 26 L48 36 L52 36 L47 46 L56 34 L52 34 Z" fill="url(#lightning)"/>
+  <!-- Jaw/chin mask -->
+  <path d="M36 60 Q50 66 64 60 L62 68 Q50 72 38 68 Z" fill="#991b1b"/>
+  <!-- Speed lines behind figure -->
+  <line x1="10" y1="70" x2="28" y2="64" stroke="#fbbf24" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+  <line x1="10" y1="78" x2="28" y2="72" stroke="#fbbf24" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+  <!-- Lightning at chin -->
+  <path d="M45 72 L42 80 L48 78 L44 88" stroke="#facc15" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+</svg>

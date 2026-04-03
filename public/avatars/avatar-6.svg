@@ -1,0 +1,45 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg6" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0f2744"/>
+      <stop offset="100%" stop-color="#050d1a"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bg6)"/>
+  <!-- Tuxedo body -->
+  <rect x="28" y="68" width="44" height="32" rx="4" fill="#0f172a"/>
+  <!-- White shirt front -->
+  <path d="M44 72 L50 68 L56 72 L54 90 L46 90 Z" fill="#f8fafc"/>
+  <!-- Bow tie -->
+  <path d="M44 72 L50 76 L56 72 L50 69 Z" fill="#1e3a8a"/>
+  <!-- Jacket lapels -->
+  <path d="M28 68 L44 72 L38 90 L28 90 Z" fill="#1e293b"/>
+  <path d="M72 68 L56 72 L62 90 L72 90 Z" fill="#1e293b"/>
+  <!-- White pocket square -->
+  <path d="M30 74 L36 72 L36 78 L30 78 Z" fill="#f8fafc" opacity="0.8"/>
+  <!-- Head/face -->
+  <ellipse cx="50" cy="48" rx="20" ry="22" fill="#c8956a"/>
+  <!-- Slicked back hair -->
+  <path d="M30 36 Q50 26 70 36 Q68 30 50 28 Q32 28 30 36 Z" fill="#1c1917"/>
+  <path d="M30 36 Q50 30 70 36" stroke="#2c2016" stroke-width="1" fill="none"/>
+  <!-- Sharp jawline -->
+  <path d="M30 52 Q30 66 50 70 Q70 66 70 52" fill="#c8956a"/>
+  <!-- Confident eyes -->
+  <ellipse cx="41" cy="47" rx="4" ry="3.5" fill="#f8fafc"/>
+  <ellipse cx="59" cy="47" rx="4" ry="3.5" fill="#f8fafc"/>
+  <ellipse cx="41" cy="47" rx="2.5" ry="2.5" fill="#1e293b"/>
+  <ellipse cx="59" cy="47" rx="2.5" ry="2.5" fill="#1e293b"/>
+  <circle cx="42" cy="46" r="0.8" fill="white" opacity="0.8"/>
+  <circle cx="60" cy="46" r="0.8" fill="white" opacity="0.8"/>
+  <!-- Suave eyebrows -->
+  <path d="M36 42 Q41 40 46 42" stroke="#1c1917" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M54 42 Q59 40 64 42" stroke="#1c1917" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Thin smile -->
+  <path d="M43 59 Q50 63 57 59" stroke="#a06040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Ear -->
+  <ellipse cx="30" cy="49" rx="4" ry="5" fill="#c8956a"/>
+  <ellipse cx="70" cy="49" rx="4" ry="5" fill="#c8956a"/>
+  <!-- Cufflinks silver accent -->
+  <circle cx="36" cy="82" r="2" fill="#94a3b8"/>
+  <circle cx="64" cy="82" r="2" fill="#94a3b8"/>
+</svg>

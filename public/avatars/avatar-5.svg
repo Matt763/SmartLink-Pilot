@@ -1,0 +1,43 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg5" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </radialGradient>
+    <radialGradient id="eyes5" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bg5)"/>
+  <!-- Wizard hat brim -->
+  <ellipse cx="50" cy="32" rx="26" ry="6" fill="#2d1f4e"/>
+  <!-- Hat cone -->
+  <polygon points="50,4 32,32 68,32" fill="#3b1f6b"/>
+  <!-- Hat stars -->
+  <circle cx="42" cy="18" r="1.5" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="56" cy="22" r="1" fill="#a78bfa" opacity="0.8"/>
+  <circle cx="48" cy="26" r="1" fill="#fbbf24" opacity="0.6"/>
+  <!-- Grey beard flowing down -->
+  <path d="M30 60 Q28 75 32 90 L36 92 Q40 78 50 76 Q60 78 64 92 L68 90 Q72 75 70 60 Q60 66 50 66 Q40 66 30 60 Z" fill="#9ca3af"/>
+  <!-- Beard highlight -->
+  <path d="M38 68 Q44 72 50 70 Q56 72 62 68 Q58 78 50 76 Q42 78 38 68 Z" fill="#d1d5db"/>
+  <!-- Face -->
+  <ellipse cx="50" cy="52" rx="18" ry="16" fill="#d4a574"/>
+  <!-- Kind eyes -->
+  <ellipse cx="41" cy="48" rx="4.5" ry="4" fill="url(#eyes5)"/>
+  <ellipse cx="59" cy="48" rx="4.5" ry="4" fill="url(#eyes5)"/>
+  <ellipse cx="41" cy="48" rx="2.5" ry="2.5" fill="#78350f"/>
+  <ellipse cx="59" cy="48" rx="2.5" ry="2.5" fill="#78350f"/>
+  <!-- Eye sparkle -->
+  <circle cx="43" cy="47" r="1" fill="white" opacity="0.8"/>
+  <circle cx="61" cy="47" r="1" fill="white" opacity="0.8"/>
+  <!-- Moustache -->
+  <path d="M43 58 Q50 55 57 58" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Smile wrinkles -->
+  <path d="M36 52 Q35 56 37 60" stroke="#c4956a" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M64 52 Q65 56 63 60" stroke="#c4956a" stroke-width="1" fill="none" opacity="0.5"/>
+  <!-- Staff glow hint at bottom -->
+  <line x1="50" y1="88" x2="50" y2="100" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="50" cy="86" r="3" fill="#c4b5fd" opacity="0.8"/>
+</svg>

@@ -1,0 +1,37 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg2" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#3a0a00"/>
+    </radialGradient>
+    <radialGradient id="reactor" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="60%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="url(#bg2)"/>
+  <!-- Iron helmet -->
+  <ellipse cx="50" cy="42" rx="24" ry="26" fill="#b91c1c"/>
+  <!-- Gold faceplate -->
+  <path d="M28 46 Q50 38 72 46 L70 68 Q50 74 30 68 Z" fill="#d97706"/>
+  <!-- Eye slits glowing -->
+  <path d="M32 50 L44 47 L44 52 L32 55 Z" fill="#fbbf24" opacity="0.9"/>
+  <path d="M68 50 L56 47 L56 52 L68 55 Z" fill="#fbbf24" opacity="0.9"/>
+  <!-- Inner eye glow -->
+  <path d="M34 51 L43 48.5 L43 51.5 L34 54 Z" fill="#fff" opacity="0.7"/>
+  <path d="M66 51 L57 48.5 L57 51.5 L66 54 Z" fill="#fff" opacity="0.7"/>
+  <!-- Nose plate -->
+  <path d="M46 55 L50 58 L54 55 L52 62 L48 62 Z" fill="#b45309"/>
+  <!-- Chin piece -->
+  <path d="M36 65 Q50 72 64 65 L62 72 Q50 76 38 72 Z" fill="#b91c1c"/>
+  <!-- Arc reactor -->
+  <circle cx="50" cy="84" r="7" fill="url(#reactor)"/>
+  <circle cx="50" cy="84" r="4" fill="#bfdbfe"/>
+  <circle cx="50" cy="84" r="2" fill="#fff"/>
+  <!-- Helmet ridges -->
+  <line x1="50" y1="16" x2="50" y2="28" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+  <line x1="36" y1="20" x2="40" y2="30" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="64" y1="20" x2="60" y2="30" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

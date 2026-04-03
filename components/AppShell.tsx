@@ -26,6 +26,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "./ThemeProvider";
+import NativeAuthScreen from "./NativeAuthScreen";
+import AvatarPicker from "./AvatarPicker";
 import {
   House,
   Link2,
@@ -150,7 +152,7 @@ const MENU_SECTIONS: MenuSection[] = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname   = usePathname();
   const router     = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status, update } = useSession();
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -194,6 +196,44 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     },
     [handleCenterFab, router]
   );
+
+  /* ── auth gating ────────────────────────────────────────────────────────── */
+
+  // Loading — show a minimal branded splash to avoid layout flash
+  if (status === "loading") {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#080812] gap-4">
+        <Image
+          src="/icon-192.png"
+          alt="SmartLink Pilot"
+          width={72}
+          height={72}
+          className="rounded-[22px] shadow-2xl shadow-indigo-500/40 animate-pulse"
+          priority
+        />
+        <span className="text-[15px] font-extrabold tracking-tight text-white">
+          Smart<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Link</span> Pilot
+        </span>
+      </div>
+    );
+  }
+
+  // Not signed in → show native auth screen
+  if (status === "unauthenticated") {
+    return <NativeAuthScreen />;
+  }
+
+  // Signed in but no avatar yet → avatar picker (skip for Google users who already have an image)
+  if (session?.user && !session.user.image) {
+    return (
+      <AvatarPicker
+        onComplete={async () => {
+          // Re-fetch session so AppShell gets the updated image
+          await update();
+        }}
+      />
+    );
+  }
 
   /* ── render ─────────────────────────────────────────────────────────────── */
 
@@ -241,19 +281,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => router.push("/dashboard")}
                 aria-label="My profile"
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-transform"
+                className="w-9 h-9 rounded-full overflow-hidden shadow-lg shadow-blue-500/30 active:scale-95 transition-transform flex-shrink-0"
               >
-                {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                {session.user?.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user?.name ?? "Profile"}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                    {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                  </div>
+                )}
               </button>
-            ) : (
-              <button
-                onClick={() => router.push("/login")}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/30 active:scale-95 transition-transform"
-              >
-                <LogIn size={13} />
-                Sign In
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
@@ -396,8 +441,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={() => goTo("/dashboard")}
                 className="w-full flex items-center gap-3.5 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 rounded-2xl border border-blue-100/80 dark:border-blue-900/40 active:scale-[0.98] transition-transform text-left"
               >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base font-bold shadow-lg shadow-blue-500/30 flex-shrink-0">
-                  {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                <div className="w-11 h-11 rounded-xl overflow-hidden shadow-lg shadow-blue-500/30 flex-shrink-0">
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user?.name ?? "Profile"}
+                      width={44}
+                      height={44}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base font-bold">
+                      {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[15px] text-gray-900 dark:text-white truncate leading-tight">
@@ -533,7 +591,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  signOut({ callbackUrl: "/" });
+                  signOut({ redirect: false });
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform border border-red-100 dark:border-red-900/50"
               >

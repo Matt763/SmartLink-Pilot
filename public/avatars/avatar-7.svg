@@ -1,0 +1,44 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg7" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1c1917"/>
+      <stop offset="100%" stop-color="#0c0a09"/>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3b30"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bg7)"/>
+  <!-- Metal skull/robot right half -->
+  <path d="M50 20 Q72 22 74 48 Q74 68 60 72 L50 70 Z" fill="#4b5563"/>
+  <!-- Chrome highlight right -->
+  <path d="M52 22 Q68 26 70 50 Q68 66 58 70 L54 68 Q66 62 68 48 Q66 28 52 22 Z" fill="#9ca3af" opacity="0.4"/>
+  <!-- Organic left half -->
+  <path d="M50 20 Q28 22 26 48 Q26 68 40 72 L50 70 Z" fill="#c8956a"/>
+  <!-- Face division line -->
+  <line x1="50" y1="20" x2="50" y2="72" stroke="#1f2937" stroke-width="1.5"/>
+  <!-- Organic left eye (normal) -->
+  <ellipse cx="38" cy="46" rx="5" ry="4.5" fill="white"/>
+  <ellipse cx="38" cy="46" rx="3.5" ry="3.5" fill="#1e3a5f"/>
+  <ellipse cx="38" cy="46" rx="2" ry="2" fill="#0f1f35"/>
+  <circle cx="39.5" cy="44.5" r="1" fill="white" opacity="0.8"/>
+  <!-- Robotic red eye (right) -->
+  <rect x="56" y="42" width="12" height="8" rx="1" fill="#111"/>
+  <rect x="57" y="43" width="10" height="6" rx="1" fill="url(#eyeGlow)"/>
+  <!-- Eye scan line -->
+  <rect x="57" y="45" width="10" height="1.5" fill="#ff6b6b" opacity="0.6"/>
+  <!-- Metal chin/jaw right -->
+  <path d="M50 60 Q58 64 64 60 L62 70 Q56 74 50 70 Z" fill="#4b5563"/>
+  <!-- Organic mouth area left -->
+  <path d="M36 60 Q43 64 50 60 L50 70 Q44 74 38 70 Z" fill="#c8956a"/>
+  <!-- Grimace mouth -->
+  <path d="M38 62 Q44 66 50 62" stroke="#78350f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Metal plates/bolts on right -->
+  <circle cx="62" cy="32" r="2" fill="#374151"/>
+  <circle cx="68" cy="44" r="1.5" fill="#374151"/>
+  <rect x="55" y="52" width="14" height="3" rx="1" fill="#374151"/>
+  <!-- Endoskeleton chin -->
+  <path d="M50 70 Q58 76 64 72 L60 82 Q56 86 50 84 Z" fill="#4b5563"/>
+  <path d="M50 70 Q42 76 36 72 L40 82 Q44 86 50 84 Z" fill="#c8956a"/>
+</svg>

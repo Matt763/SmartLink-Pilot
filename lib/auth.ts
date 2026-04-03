@@ -165,8 +165,9 @@ export const authOptions: NextAuthOptions = {
         token.role = "admin";
       }
 
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
+      if (trigger === "update") {
+        if (session?.name)  token.name  = session.name;
+        if (session?.image) token.image = session.image;
       }
 
       return token;
