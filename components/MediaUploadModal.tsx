@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Upload, Link as LinkIcon, Loader2, Video, Image as ImageIcon } from "lucide-react";
+import { X, Upload, Link as LinkIcon, Loader2, Video, Image as ImageIcon, CheckCircle2 } from "lucide-react";
 
 interface MediaModalProps {
   isOpen: boolean;
@@ -11,23 +11,83 @@ interface MediaModalProps {
   onEmbedLink: (link: string) => void;
 }
 
+/** Compress an image client-side via canvas before uploading to reduce bandwidth. */
+async function compressImageClient(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      const MAX_DIM = 1920;
+      let { width, height } = img;
+
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width >= height) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const name = file.name.replace(/\.[^.]+$/, ".webp");
+            resolve(new File([blob], name, { type: "image/webp" }));
+          } else {
+            resolve(file);
+          }
+        },
+        "image/webp",
+        0.82
+      );
+    };
+
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
+}
+
 export default function MediaUploadModal({ isOpen, type, onClose, onUploadFile, onEmbedLink }: MediaModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "embed">("upload");
   const [linkInput, setLinkInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<{ original: number; compressed: number } | null>(null);
 
   if (!isOpen) return null;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setIsUploading(true);
-      try {
-        await onUploadFile(e.target.files[0]);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsUploading(false);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setCompressionInfo(null);
+
+    try {
+      let fileToUpload = file;
+
+      if (file.type.startsWith("image/")) {
+        const originalSize = file.size;
+        fileToUpload = await compressImageClient(file);
+        setCompressionInfo({ original: originalSize, compressed: fileToUpload.size });
       }
+
+      await onUploadFile(fileToUpload);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -88,7 +148,16 @@ export default function MediaUploadModal({ isOpen, type, onClose, onUploadFile, 
             {isUploading ? (
               <div className="flex flex-col items-center justify-center space-y-4">
                 <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium animate-pulse">Processing high-fidelity upload...</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium animate-pulse">
+                  {compressionInfo ? "Uploading compressed file..." : "Compressing..."}
+                </p>
+                {compressionInfo && (
+                  <div className="flex items-center gap-2 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-full">
+                    <CheckCircle2 size={14} />
+                    {(compressionInfo.original / 1024).toFixed(0)} KB → {(compressionInfo.compressed / 1024).toFixed(0)} KB
+                    {" "}({Math.round((1 - compressionInfo.compressed / compressionInfo.original) * 100)}% smaller)
+                  </div>
+                )}
               </div>
             ) : activeTab === "upload" ? (
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-4 sm:p-8 hover:bg-white/40 dark:hover:bg-gray-800/40 hover:border-indigo-500 transition-colors flex flex-col items-center justify-center group cursor-pointer relative">
