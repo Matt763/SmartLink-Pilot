@@ -16,19 +16,16 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 
-import { Navbar }          from "./Navbar";
-import { Footer }          from "./Footer";
-import ChatWidget          from "./ChatWidget";
-import ClipboardShortener  from "./ClipboardShortener";
-import AnalyticsTracker    from "./AnalyticsTracker";
-import AdBanner            from "./AdBanner";
-import AppShell            from "./AppShell";
+import { Navbar }         from "./Navbar";
+import { Footer }         from "./Footer";
+import ChatWidget         from "./ChatWidget";
+import ClipboardShortener from "./ClipboardShortener";
+import AnalyticsTracker   from "./AnalyticsTracker";
+import AppShell           from "./AppShell";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
-  const pathname          = usePathname();
-  const { data: session } = useSession();
+  const pathname = usePathname();
   const [mounted,  setMounted]  = useState(false);
   const [isNative, setIsNative] = useState(false);
 
@@ -38,7 +35,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, []);
 
   const isAdminPath = pathname?.startsWith("/admin");
-  const isFreeUser  = !session?.user || session.user.role === "free_user";
 
   /* ── Pre-mount: render content only (no chrome) to avoid a flash ──────── */
   if (!mounted) {
@@ -56,7 +52,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <>
         <AnalyticsTracker />
         <AppShell>{children}</AppShell>
-        {/* Clipboard shortener still works in native */}
+        {/* Clipboard detection is native-only */}
         <ClipboardShortener />
       </>
     );
@@ -68,10 +64,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <AnalyticsTracker />
       {!isAdminPath && <Navbar />}
       <main className={!isAdminPath ? "min-h-screen" : ""}>{children}</main>
-      {!isAdminPath && isFreeUser && <AdBanner slot="footer" />}
       {!isAdminPath && <Footer />}
       {!isAdminPath && <ChatWidget />}
-      {!isAdminPath && <ClipboardShortener />}
     </>
   );
 }
