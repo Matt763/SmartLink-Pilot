@@ -16,13 +16,16 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import { Navbar }         from "./Navbar";
 import { Footer }         from "./Footer";
-import ChatWidget         from "./ChatWidget";
 import ClipboardShortener from "./ClipboardShortener";
 import AnalyticsTracker   from "./AnalyticsTracker";
 import AppShell           from "./AppShell";
+
+// Lazy-load heavy non-critical components after the page is interactive
+const ChatWidget = dynamic(() => import("./ChatWidget"), { ssr: false });
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,12 +41,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   /* ── Pre-mount: render content only (no chrome) to avoid a flash ──────── */
   if (!mounted) {
-    return (
-      <>
-        <AnalyticsTracker />
-        <main className="min-h-screen">{children}</main>
-      </>
-    );
+    return <main className="min-h-screen">{children}</main>;
   }
 
   /* ── Native installed app ─────────────────────────────────────────────── */

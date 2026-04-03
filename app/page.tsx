@@ -200,13 +200,13 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: LinkIcon, title: "Custom Aliases", desc: "Create recognizable, branded short links that drive higher click-through rates and build brand trust.", color: "blue" },
-              { icon: BarChart2, title: "Deep Analytics", desc: "Track clicks, geographic locations, browsers, and referring sources in real time with beautiful charts.", color: "purple" },
-              { icon: ShieldCheck, title: "Enterprise Security", desc: "Password protection, link expiration, and intelligent malicious URL routing blocks built into the core.", color: "green" },
+              { icon: LinkIcon,   title: "Custom Aliases",     desc: "Create recognizable, branded short links that drive higher click-through rates and build brand trust.",                    iconClass: "w-7 h-7 text-blue-600 dark:text-blue-400",   wrapClass: "w-14 h-14 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6"   },
+              { icon: BarChart2,  title: "Deep Analytics",     desc: "Track clicks, geographic locations, browsers, and referring sources in real time with beautiful charts.",                iconClass: "w-7 h-7 text-purple-600 dark:text-purple-400", wrapClass: "w-14 h-14 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mb-6" },
+              { icon: ShieldCheck,title: "Enterprise Security",desc: "Password protection, link expiration, and intelligent malicious URL routing blocks built into the core.", iconClass: "w-7 h-7 text-green-600 dark:text-green-400",  wrapClass: "w-14 h-14 bg-green-100 dark:bg-green-900/20 rounded-2xl flex items-center justify-center mb-6"  },
             ].map((f) => (
               <div key={f.title} className="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-14 h-14 bg-${f.color}-100 dark:bg-${f.color}-900/20 rounded-2xl flex items-center justify-center mb-6`}>
-                  <f.icon className={`w-7 h-7 text-${f.color}-600 dark:text-${f.color}-400`} />
+                <div className={f.wrapClass}>
+                  <f.icon className={f.iconClass} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{f.title}</h3>
                 <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
@@ -320,102 +320,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      {false && <footer className="bg-gray-950 dark:bg-black text-white border-t border-gray-800">
-        {/* Main Footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-            {/* Brand */}
-            <div className="col-span-2">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                </div>
-                <span className="text-xl font-extrabold tracking-tight">SmartLink <span className="text-sm font-bold text-gray-500">Pilot</span></span>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed max-w-xs mb-6">
-                The most trusted URL shortener for marketers, developers, and content creators worldwide.
-              </p>
-              <div className="flex gap-3">
-                {["twitter", "github", "linkedin"].map(social => (
-                  <button key={social} className="w-9 h-9 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition">
-                    <span className="text-xs font-bold uppercase">{social[0]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="font-semibold text-sm text-gray-200 uppercase tracking-wider mb-5">Product</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "Pricing", href: "/pricing" },
-                  { label: "Dashboard", href: "/dashboard" },
-                  { label: "Features", href: "/features" },
-                  { label: "Analytics", href: "/features" },
-                ].map(l => (
-                  <li key={l.label}><Link href={l.href} className="text-gray-400 hover:text-white text-sm transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="font-semibold text-sm text-gray-200 uppercase tracking-wider mb-5">Company</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "About Us", href: "/about" },
-                  { label: "Our Team", href: "/team" },
-                  { label: "Contact", href: "/contact" },
-                  { label: "Trust & E-E-A-T", href: "/trust" },
-                ].map(l => (
-                  <li key={l.label}><Link href={l.href} className="text-gray-400 hover:text-white text-sm transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="font-semibold text-sm text-gray-200 uppercase tracking-wider mb-5">Legal</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "Privacy Policy", href: "/privacy" },
-                  { label: "Terms of Service", href: "/terms" },
-                  { label: "Cookies Policy", href: "/cookies" },
-                  { label: "Disclaimer", href: "/disclaimer" },
-                ].map(l => (
-                  <li key={l.label}><Link href={l.href} className="text-gray-400 hover:text-white text-sm transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-xs">© 2026 SmartLink Pilot. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-gray-400 text-xs">All systems operational</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-                <Globe className="w-3.5 h-3.5" />
-                <span>Global CDN</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-                <Zap className="w-3.5 h-3.5" />
-                <span>&lt;100ms</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-center pb-4">
-            <p className="text-gray-500 text-xs">Made With ❤️ By Mayobe Bros</p>
-          </div>
-        </div>
-      </footer>}
     </div>
   );
 }

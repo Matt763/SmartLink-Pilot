@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import ChatWidget from "@/components/ChatWidget";
-import ClipboardShortener from "@/components/ClipboardShortener";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import CapacitorBridge from "@/components/CapacitorBridge";
 import CookieConsent from "@/components/CookieConsent";
@@ -20,6 +19,15 @@ const geistMono = localFont({
 });
 
 const BASE_URL = process.env.NEXTAUTH_URL || "https://www.smartlinkpilot.com";
+
+export const viewport: Viewport = {
+  themeColor:        "#4f46e5",
+  colorScheme:       "dark light",
+  width:             "device-width",
+  initialScale:      1,
+  minimumScale:      1,
+  viewportFit:       "cover",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -159,21 +167,16 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <meta name="theme-color" content="#4f46e5" />
         <meta name="msapplication-TileColor" content="#4f46e5" />
         {/* Explicit logo hints for search engines (Google, Bing) */}
         <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        {/* ── Google AdSense ──────────────────────────────────────────── */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7857493359758179"
-          crossOrigin="anonymous"
-        />
+        {/* Preconnect to AdSense CDN so the lazy script loads faster */}
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100`}
       >
         <Providers>
           <CapacitorBridge />
@@ -182,6 +185,13 @@ export default function RootLayout({
           </LayoutWrapper>
           <CookieConsent />
         </Providers>
+
+        {/* ── Google AdSense — loaded after page is interactive ────────── */}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7857493359758179"
+          strategy="lazyOnload"
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   );

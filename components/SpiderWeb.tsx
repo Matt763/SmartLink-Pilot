@@ -17,11 +17,17 @@ export function SpiderWeb() {
   const prevPointerRef = useRef({ x: 0, y: 0 });
   const velocityRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
-  const rafRef = useRef<number>(0);
+  const rafRef    = useRef<number>(0);
+  const pausedRef = useRef(false);
+  const isDarkRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Respect prefers-reduced-motion — skip the whole animation
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -60,6 +66,12 @@ export function SpiderWeb() {
     };
 
     const animate = () => {
+      // Pause when tab is hidden or section is off-screen
+      if (pausedRef.current) {
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
       if (!ctx) return;
       ctx.clearRect(0, 0, w, h);
 
@@ -68,7 +80,8 @@ export function SpiderWeb() {
       const vel = velocityRef.current;
       const canInteract = vel < MAX_VELOCITY_FOR_INTERACTION && pointer.active;
 
-      const isDark = document.documentElement.classList.contains("dark");
+      // isDark is updated by MutationObserver — not read from DOM every frame
+      const isDark = isDarkRef.current;
       const lineColor = isDark ? "147, 197, 253" : "99, 102, 241";
       const dotColor = isDark ? "rgba(147, 197, 253, 0.35)" : "rgba(99, 102, 241, 0.25)";
       const pointerLineColor = isDark ? "147, 197, 253" : "99, 102, 241";
@@ -174,6 +187,29 @@ export function SpiderWeb() {
       velocityRef.current = 0;
     };
 
+    // ── Pause when tab is hidden ──────────────────────────────────────
+    const onVisibility = () => {
+      pausedRef.current = document.hidden;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // ── Pause when canvas is scrolled out of view ─────────────────────
+    const observer = new IntersectionObserver(
+      ([entry]) => { pausedRef.current = !entry.isIntersecting; },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
+
+    // ── Watch for dark-mode class changes instead of reading DOM every frame ──
+    isDarkRef.current = document.documentElement.classList.contains("dark");
+    const themeObserver = new MutationObserver(() => {
+      isDarkRef.current = document.documentElement.classList.contains("dark");
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     init();
     animate();
 
@@ -186,6 +222,9 @@ export function SpiderWeb() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      document.removeEventListener("visibilitychange", onVisibility);
+      observer.disconnect();
+      themeObserver.disconnect();
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handlePointerLeave);
       canvas.removeEventListener("touchmove", handleTouchMove);
