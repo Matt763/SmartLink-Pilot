@@ -11,11 +11,6 @@ export function Navbar() {
   const { data: session } = useSession();
   const isPro = session?.user?.role === "premium_user" || session?.user?.role === "admin";
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isNative, setIsNative] = useState(false);
-
-  useEffect(() => {
-    setIsNative(!!(window as any).Capacitor?.isNativePlatform?.());
-  }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -101,23 +96,21 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Mobile hamburger — shown on browsers (including mobile); hidden only on native installed app */}
-              {!isNative && (
-                <button
-                  onClick={() => setMobileOpen(!mobileOpen)}
-                  className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-                  aria-label="Toggle menu"
-                >
-                  {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-                </button>
-              )}
+              {/* Mobile hamburger — web only (Navbar is never rendered in the native app) */}
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                aria-label="Toggle menu"
+              >
+                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Overlay — hidden on native (bottom nav used instead) */}
-      {mobileOpen && !isNative && (
+      {/* Mobile overlay */}
+      {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden"
           onClick={() => setMobileOpen(false)}
@@ -125,10 +118,10 @@ export function Navbar() {
         />
       )}
 
-      {/* Mobile Sidebar Drawer — hidden on native Capacitor app */}
+      {/* Mobile Sidebar Drawer */}
       <div
         className={`fixed top-0 right-0 h-[100dvh] w-[85vw] max-w-[300px] bg-white dark:bg-gray-950 shadow-2xl border-l border-gray-100 dark:border-gray-800 z-[70] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-y-auto ${
-          mobileOpen && !isNative ? "translate-x-0" : "translate-x-full"
+          mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
         aria-label="Mobile navigation"
       >
