@@ -33,7 +33,7 @@ export async function GET(
     const referrer = req.headers.get("referer") || "Direct";
     const country = req.headers.get("x-vercel-ip-country") || "Unknown";
     
-    // Asynchronously log the click
+    // Log the click
     await prisma.click.create({
       data: {
         urlId: urlRecord.id,
@@ -43,6 +43,26 @@ export async function GET(
         referrer,
       },
     });
+
+    // Fire push notification to the link owner (non-blocking)
+    if (urlRecord.userId) {
+      const clickCount = await prisma.click.count({ where: { urlId: urlRecord.id } });
+      const device = userAgent.includes("Mobile") ? "Mobile" : "Desktop";
+      const flag = country && country !== "Unknown" ? ` 🌍 ${country}` : "";
+      fetch(`${process.env.NEXTAUTH_URL}/api/notifications/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-key": process.env.INTERNAL_API_KEY || "",
+        },
+        body: JSON.stringify({
+          userId: urlRecord.userId,
+          title: "🔗 Link Clicked!",
+          body: `Your link /${shortCode} was clicked from ${device}${flag}. Total: ${clickCount} click${clickCount !== 1 ? "s" : ""}.`,
+          data: { shortCode, clickCount: String(clickCount), country, device },
+        }),
+      }).catch(() => {}); // silently ignore if push fails
+    }
 
     let destination = urlRecord.originalUrl;
     if (!destination.startsWith("http://") && !destination.startsWith("https://")) {

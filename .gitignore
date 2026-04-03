@@ -46,6 +46,16 @@ dev.db
 /android/app/build
 /android/.gradle
 /android/local.properties
+/android/.idea
+
+# Android signing secrets — NEVER commit these
+/android/app/release.keystore
+/android/app/debug.keystore
+/android/keystore.properties
+
+# Firebase config — keep locally, add via CI secrets
+/android/app/google-services.json
+/ios/App/App/GoogleService-Info.plist
 
 # ide / tools
 /src/generated/prisma

@@ -5,6 +5,8 @@ import { Providers } from "@/components/Providers";
 import ChatWidget from "@/components/ChatWidget";
 import ClipboardShortener from "@/components/ClipboardShortener";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import CapacitorBridge from "@/components/CapacitorBridge";
+import CookieConsent from "@/components/CookieConsent";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -149,14 +151,22 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <meta name="theme-color" content="#4f46e5" />
         <meta name="msapplication-TileColor" content="#4f46e5" />
+        {/* ── Google AdSense ──────────────────────────────────────────── */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7857493359758179"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300`}
       >
         <Providers>
+          <CapacitorBridge />
           <LayoutWrapper>
             {children}
           </LayoutWrapper>
+          <CookieConsent />
         </Providers>
       </body>
     </html>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SmartLink Pilot — Floating URL Bubble
+  Appears over other apps when a URL is detected on the clipboard.
+  Design: luxury dark card with indigo accent, smooth rounded corners.
+-->
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRoot"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="24dp"
+    app:cardBackgroundColor="#1a1a2e">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header row: icon + title + close button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="10dp">
+
+            <!-- App icon -->
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@mipmap/ic_launcher_round"
+                android:scaleType="fitCenter" />
+
+            <!-- Title -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="URL Detected"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginStart="8dp" />
+
+            <!-- Close button -->
+            <TextView
+                android:id="@+id/btnClose"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="✕"
+                android:textColor="#9ca3af"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:background="@drawable/close_btn_bg"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+        <!-- URL preview -->
+        <TextView
+            android:id="@+id/tvUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="https://example.com/very-long-url"
+            android:textColor="#a5b4fc"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:background="@drawable/url_preview_bg"
+            android:padding="10dp"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="monospace" />
+
+        <!-- Action buttons row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <!-- Shorten button -->
+            <Button
+                android:id="@+id/btnShorten"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1.4"
+                android:text="✂  Shorten Now"
+                android:textColor="#ffffff"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@drawable/shorten_btn_bg"
+                android:layout_marginEnd="8dp"
+                android:stateListAnimator="@null" />
+
+            <!-- Copy short link (after shortening) — hidden initially -->
+            <Button
+                android:id="@+id/btnDismiss"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="0.6"
+                android:text="Ignore"
+                android:textColor="#6b7280"
+                android:textSize="12sp"
+                android:background="@drawable/dismiss_btn_bg"
+                android:stateListAnimator="@null" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
