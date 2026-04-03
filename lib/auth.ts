@@ -89,6 +89,107 @@ export const authOptions: NextAuthOptions = {
       allowDangerousEmailAccountLinking: true,
     }),
 
+    // ── Native Google Sign-In (Capacitor Android/iOS) ──────────────────────
+    // Receives the idToken from the native Google Sign-In SDK and verifies it
+    // server-side with Google's tokeninfo endpoint.  No browser or redirect
+    // flow — the entire auth happens inside the app.
+    CredentialsProvider({
+      id: "google-native",
+      name: "Google (Native)",
+      credentials: {
+        idToken: { label: "Google ID Token", type: "text" },
+      },
+      async authorize(credentials) {
+        const idToken = credentials?.idToken;
+        if (!idToken) return null;
+
+        // Verify the token with Google's public endpoint
+        const tokenRes = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+        );
+        if (!tokenRes.ok) return null;
+
+        const payload = await tokenRes.json();
+
+        // Validate audience — must match our Web OAuth client ID
+        const validAudiences = [
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_ANDROID_CLIENT_ID, // optional Android client ID
+        ].filter(Boolean);
+
+        if (!validAudiences.includes(payload.aud)) {
+          console.error("[google-native] idToken audience mismatch:", payload.aud);
+          return null;
+        }
+
+        if (!payload.email_verified || !payload.email) return null;
+
+        // Find or create user — mirrors the buildAdapter createUser logic
+        let user = await prisma.user.findUnique({ where: { email: payload.email } });
+
+        if (!user) {
+          const role = payload.email === CEO_EMAIL ? "admin" : "free_user";
+          const baseUsername = payload.email === CEO_EMAIL
+            ? "mcleanmbaga"
+            : generateUsername(payload.name || "", payload.email);
+          const username = await getUniqueUsername(baseUsername);
+
+          user = await prisma.user.create({
+            data: {
+              email: payload.email,
+              name: payload.name ?? null,
+              image: payload.picture ?? null,
+              username,
+              role,
+              emailVerified: new Date(),
+            },
+          });
+
+          // Welcome email + newsletter for new users (non-CEO)
+          if (user.email !== CEO_EMAIL) {
+            try {
+              const { subject, html } = welcomeEmailTemplate(user.name ?? username, username);
+              await sendEmail({
+                from: SENDERS.founder,
+                to: user.email!,
+                subject,
+                html,
+                replyTo: "support@smartlinkpilot.com",
+              });
+            } catch (err) {
+              console.error("[google-native] Welcome email failed:", err);
+            }
+            try {
+              await prisma.newsletterSubscriber.upsert({
+                where: { email: user.email! },
+                update: { subscribed: true, name: user.name ?? undefined },
+                create: { email: user.email!, name: user.name ?? undefined },
+              });
+            } catch (err) {
+              console.error("[google-native] Newsletter subscribe failed:", err);
+            }
+          }
+        } else {
+          // Update avatar from Google if user hasn't set a custom one
+          if (!user.image && payload.picture) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { image: payload.picture, emailVerified: new Date() },
+            });
+            user = { ...user, image: payload.picture };
+          }
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          role: user.role,
+        };
+      },
+    }),
+
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -145,9 +246,8 @@ export const authOptions: NextAuthOptions = {
         token.image = (user as any).image ?? null;
       }
 
-      // Google OAuth first sign-in: fetch full profile from DB
-      // (adapter createUser may have set role/username we need)
-      if (account?.provider === "google" && token.id) {
+      // Google OAuth or native first sign-in: fetch full profile from DB
+      if ((account?.provider === "google" || account?.provider === "google-native") && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true, username: true, image: true, name: true },

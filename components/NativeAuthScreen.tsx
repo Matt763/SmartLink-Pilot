@@ -9,20 +9,21 @@
  * Supports:
  *   • Email / password sign in
  *   • Email / name / password sign up (auto signs in after success)
- *   • Google OAuth — opened in Capacitor in-app browser (Android Custom Tabs /
- *     iOS SFSafariViewController).  Shares cookie store with the WebView so the
- *     session is available immediately when the browser closes.
+ *   • Google Sign-In — uses the native Android/iOS Google Sign-In SDK via
+ *     @codetrix-studio/capacitor-google-auth.  Shows a native account picker
+ *     sheet with no browser, no Custom Tab, no redirect — entirely in-app.
  *
- * Google OAuth flow (native):
- *   1. Browser.open() → /api/auth/signin/google?callbackUrl=/auth/native-success
- *   2. User authenticates with Google; NextAuth sets session cookie
- *   3. NextAuth redirects to /auth/native-success
- *   4. That page does window.location = "smartlinkpilot://auth-success"
- *   5. Android closes Custom Tab and fires appUrlOpen in the Capacitor WebView
- *   6. We call session.update() → AppShell detects session → NativeAuthScreen unmounts
+ * Native Google Sign-In flow:
+ *   1. GoogleAuth.signIn() → native OS account picker sheet appears
+ *   2. User taps their Google account
+ *   3. Plugin returns { authentication: { idToken } }
+ *   4. We POST the idToken to NextAuth "google-native" credentials provider
+ *   5. Server verifies the token with Google's tokeninfo API
+ *   6. NextAuth sets a session cookie in the WebView
+ *   7. session.update() → AppShell detects session → screen unmounts
  */
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import {
@@ -31,9 +32,6 @@ import {
 } from "lucide-react";
 
 type Mode = "signin" | "signup";
-
-/** The production origin used for the Google OAuth URL. */
-const APP_ORIGIN = "https://www.smartlinkpilot.com";
 
 /* ── tiny Google SVG logo ──────────────────────────────────────────────── */
 function GoogleLogo() {
@@ -93,10 +91,6 @@ export default function NativeAuthScreen() {
   const [loading, setLoading]         = useState(false);
   const [googleLoading, setGoogleLoad] = useState(false);
   const [error, setError]             = useState("");
-
-  // Tracks listener handles so we can remove them after they fire
-  const urlListenerRef     = useRef<{ remove: () => void } | null>(null);
-  const browserListenerRef = useRef<{ remove: () => void } | null>(null);
 
   const clear = () => {
     setError("");
@@ -185,71 +179,56 @@ export default function NativeAuthScreen() {
     setLoading(false);
   };
 
-  /* ── Google OAuth (in-app browser) ──────────────────────────────────── */
+  /* ── Native Google Sign-In (no browser, no Custom Tab) ─────────────── */
   const handleGoogle = async () => {
     setGoogleLoad(true);
     setError("");
 
     try {
-      // Dynamic import so these modules are only bundled when needed.
-      const [{ Browser }, { App }, { Capacitor }] = await Promise.all([
-        import("@capacitor/browser"),
-        import("@capacitor/app"),
-        import("@capacitor/core"),
-      ]);
+      // Dynamic import — only included in the native bundle, not the web build.
+      const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
 
-      // Guard: if the native Browser plugin is not registered in this APK build,
-      // tell the user to update the app instead of showing a cryptic error.
-      if (!Capacitor.isPluginAvailable("Browser")) {
-        setError("In-app browser unavailable. Please update the app and try again.");
+      // Initialize with the Web OAuth client ID so Google returns a verifiable idToken.
+      // This is the same client ID used by the web OAuth provider.
+      await GoogleAuth.initialize({
+        clientId: "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com",
+        scopes: ["profile", "email"],
+        grantOfflineAccess: false,
+      });
+
+      // Shows the native Android account picker / iOS consent sheet.
+      // No browser, no redirect, fully inside the app.
+      const googleUser = await GoogleAuth.signIn();
+      const idToken = googleUser?.authentication?.idToken;
+
+      if (!idToken) {
+        setError("Google sign-in did not return a token. Please try again.");
         setGoogleLoad(false);
         return;
       }
 
-      const callbackUrl = encodeURIComponent("/auth/native-success");
-      const signinUrl   = `${APP_ORIGIN}/api/auth/signin/google?callbackUrl=${callbackUrl}`;
+      // Exchange the idToken for a NextAuth session via the google-native
+      // credentials provider (server verifies with Google's tokeninfo API).
+      const res = await signIn("google-native", { idToken, redirect: false });
 
-      let resolved = false;
-
-      const finish = async () => {
-        if (resolved) return;
-        resolved = true;
-
-        // Clean up listeners
-        urlListenerRef.current?.remove();
-        browserListenerRef.current?.remove();
-        urlListenerRef.current     = null;
-        browserListenerRef.current = null;
-
-        // Refresh session — if OAuth succeeded the cookie is now in the WebView
-        await update();
+      if (res?.error) {
+        setError("Google sign-in failed. Please try again.");
         setGoogleLoad(false);
-      };
+        return;
+      }
 
-      // Primary signal: /auth/native-success redirects to smartlinkpilot://auth-success
-      // Android closes the Custom Tab and fires appUrlOpen back in the WebView.
-      urlListenerRef.current = await App.addListener("appUrlOpen", (event) => {
-        if (event.url.startsWith("smartlinkpilot://auth-success")) {
-          finish();
-        }
-      });
-
-      // Fallback: if the user manually closes the browser we still try to refresh
-      browserListenerRef.current = await Browser.addListener("browserFinished", finish);
-
-      // Open the OAuth flow in an in-app browser.
-      // - Android → Chrome Custom Tab (shares cookie store with the WebView)
-      // - iOS     → SFSafariViewController
-      // presentationStyle is iOS-only; toolbarColor works on both.
-      await Browser.open({
-        url:          signinUrl,
-        toolbarColor: "#080812",
-      });
+      // Refresh session context so AppShell transitions immediately.
+      await update();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[NativeAuthScreen] Google OAuth error:", msg);
-      // Show the real error so it can be reported / debugged
-      setError(`Google sign-in failed: ${msg}`);
+      // User cancelled the account picker — not a real error
+      if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("12501")) {
+        setGoogleLoad(false);
+        return;
+      }
+      console.error("[NativeAuthScreen] Google Sign-In error:", msg);
+      setError("Google sign-in failed. Please check your connection and try again.");
+    } finally {
       setGoogleLoad(false);
     }
   };
@@ -393,7 +372,7 @@ export default function NativeAuthScreen() {
           ) : (
             <GoogleLogo />
           )}
-          {googleLoading ? "Waiting for Google…" : "Continue with Google"}
+          {googleLoading ? "Signing in…" : "Continue with Google"}
         </button>
       </div>
 

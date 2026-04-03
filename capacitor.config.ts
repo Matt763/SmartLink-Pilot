@@ -1,4 +1,5 @@
 import { CapacitorConfig } from '@capacitor/cli';
+import 'dotenv/config';
 
 const config: CapacitorConfig = {
   appId: 'com.mayobebros.smartlinkpilot',
@@ -49,6 +50,14 @@ const config: CapacitorConfig = {
     },
     App: {
       launchUrl: 'https://www.smartlinkpilot.com',
+    },
+    // Native Google Sign-In — uses the Android Google Sign-In SDK,
+    // no browser or Custom Tab required.  serverClientId must be the
+    // Web OAuth 2.0 client ID so the server can verify the returned idToken.
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: process.env.GOOGLE_CLIENT_ID || '',
+      forceCodeForRefreshToken: false,
     },
   },
 };
