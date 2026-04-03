@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken, getTransactionStatus } from "@/lib/pesapal";
+import { createInvoice, PLAN_LABELS } from "@/lib/invoice";
+import { sendEmail, SENDERS } from "@/lib/resend";
+import { invoiceReceiptEmailTemplate } from "@/lib/email-templates";
 
 const ROLE_MAP: Record<string, string> = {
   pro: "premium_user",
@@ -87,6 +90,33 @@ export async function GET(req: Request) {
 
     // Clean up the temporary order record
     await prisma.siteSetting.deleteMany({ where: { key: `order_${merchantRef}` } });
+
+    // Create invoice + send receipt email
+    try {
+      const invoice = await createInvoice({ userId, planName, trackingId });
+      const user = invoice.user;
+      if (user?.email) {
+        const plan = PLAN_LABELS[planName] ?? PLAN_LABELS.pro;
+        const invoiceUrl = `${base}/invoice/${invoice.token}`;
+        const { subject, html } = invoiceReceiptEmailTemplate({
+          name: user.name ?? user.email,
+          email: user.email,
+          invoiceNo: invoice.invoiceNo,
+          planLabel: plan.label,
+          planDescription: plan.description,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          trackingId,
+          invoiceUrl,
+          date: new Date(invoice.createdAt).toLocaleDateString("en-US", {
+            year: "numeric", month: "long", day: "numeric",
+          }),
+        });
+        await sendEmail({ from: SENDERS.support, to: user.email, subject, html });
+      }
+    } catch (err) {
+      console.error("[Verify] Invoice/email failed:", err);
+    }
 
     return NextResponse.redirect(
       `${base}/dashboard?upgrade=success&plan=${planName}`

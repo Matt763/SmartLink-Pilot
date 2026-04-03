@@ -516,3 +516,287 @@ export function accountDeletedEmailTemplate(
     html: layout(content),
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. PAYMENT INVOICE RECEIPT  — Modern · Luxury · Unique
+// Sender: support@smartlinkpilot.com
+// ─────────────────────────────────────────────────────────────────────────────
+export function invoiceReceiptEmailTemplate(params: {
+  name: string;
+  email: string;
+  invoiceNo: string;
+  planLabel: string;
+  planDescription: string;
+  amount: number;
+  currency: string;
+  trackingId?: string | null;
+  invoiceUrl: string;
+  date: string;
+}): { subject: string; html: string } {
+  const {
+    name, email, invoiceNo, planLabel, planDescription,
+    amount, currency, trackingId, invoiceUrl, date,
+  } = params;
+
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    style: "currency", currency,
+  }).format(amount);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Invoice ${invoiceNo} — SmartLink Pilot</title>
+</head>
+<body style="margin:0;padding:0;background-color:#03050f;font-family:'Segoe UI',Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#03050f;">
+    <tr>
+      <td align="center" style="padding:48px 16px 40px;">
+
+        <!-- ══ HERO HEADER ══════════════════════════════════════════════════ -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:36px;">
+
+              <!-- Glow ring + check icon -->
+              <div style="display:inline-block;position:relative;">
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding:3px;background:linear-gradient(135deg,#6366f1,#a855f7,#f59e0b);border-radius:50%;">
+                      <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="width:72px;height:72px;background:#03050f;border-radius:50%;text-align:center;vertical-align:middle;">
+                            <span style="font-size:32px;line-height:1;">&#x2705;</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <p style="margin:20px 0 4px;color:#94a3b8;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Payment Confirmed</p>
+              <h1 style="margin:0;color:#f8fafc;font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1.1;">
+                Thank you, ${name.split(" ")[0]}!
+              </h1>
+              <p style="margin:10px 0 0;color:#64748b;font-size:14px;">Your subscription is now active. Here&apos;s your official receipt.</p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- ══ INVOICE CARD ═════════════════════════════════════════════════ -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:600px;width:100%;background:linear-gradient(160deg,#0d1230 0%,#0a0f24 60%,#0d1a1a 100%);
+                 border-radius:24px;overflow:hidden;border:1px solid #1e2d5a;box-shadow:0 0 60px rgba(99,102,241,0.08);">
+
+          <!-- Top accent bar (animated gradient stripe) -->
+          <tr>
+            <td style="height:4px;background:linear-gradient(90deg,#6366f1 0%,#a855f7 35%,#f59e0b 65%,#06b6d4 100%);"></td>
+          </tr>
+
+          <!-- Invoice header row -->
+          <tr>
+            <td style="padding:32px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:top;">
+                    <!-- Logo mark -->
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:12px;padding:10px 18px;">
+                          <span style="color:#fff;font-size:16px;font-weight:800;letter-spacing:-0.3px;">&#x26A1; SmartLink<span style="color:#c4b5fd;">Pilot</span></span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="vertical-align:top;text-align:right;">
+                    <!-- PAID badge -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="display:inline-table;margin-left:auto;">
+                      <tr>
+                        <td style="background:rgba(16,185,129,0.12);border:1.5px solid rgba(16,185,129,0.4);border-radius:99px;padding:6px 18px;">
+                          <span style="color:#34d399;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">&#x25CF; PAID</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Invoice number + date -->
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <p style="margin:0 0 4px;color:#475569;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Invoice Number</p>
+                    <p style="margin:0;color:#e2e8f0;font-size:22px;font-weight:800;font-family:monospace;letter-spacing:1px;">${invoiceNo}</p>
+                  </td>
+                  <td style="text-align:right;vertical-align:top;">
+                    <p style="margin:0 0 4px;color:#475569;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Date Issued</p>
+                    <p style="margin:0;color:#94a3b8;font-size:14px;font-weight:600;">${date}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr><td style="padding:24px 40px 0;"><div style="height:1px;background:linear-gradient(90deg,transparent,#1e2d5a 20%,#1e2d5a 80%,transparent);"></div></td></tr>
+
+          <!-- Billed to -->
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <p style="margin:0 0 10px;color:#475569;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Billed To</p>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.15);border-radius:14px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0 0 3px;color:#e2e8f0;font-size:15px;font-weight:700;">${name}</p>
+                    <p style="margin:0;color:#64748b;font-size:13px;">${email}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Line item -->
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <p style="margin:0 0 10px;color:#475569;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Order Summary</p>
+
+              <!-- Plan row -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.15);border-radius:14px;overflow:hidden;">
+                <tr>
+                  <td style="padding:20px 20px 16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align:top;">
+                          <p style="margin:0 0 4px;color:#c4b5fd;font-size:15px;font-weight:800;">${planLabel}</p>
+                          <p style="margin:0;color:#64748b;font-size:12px;line-height:1.5;">${planDescription}</p>
+                        </td>
+                        <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:16px;">
+                          <p style="margin:0;color:#f8fafc;font-size:20px;font-weight:900;">${formattedAmount}</p>
+                          <p style="margin:2px 0 0;color:#64748b;font-size:11px;">per month</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Total row -->
+                <tr>
+                  <td style="padding:12px 20px 16px;border-top:1px solid rgba(168,85,247,0.12);">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td><span style="color:#94a3b8;font-size:13px;">Subtotal</span></td>
+                        <td style="text-align:right;"><span style="color:#94a3b8;font-size:13px;">${formattedAmount}</span></td>
+                      </tr>
+                      <tr>
+                        <td style="padding-top:6px;"><span style="color:#94a3b8;font-size:13px;">Tax</span></td>
+                        <td style="text-align:right;padding-top:6px;"><span style="color:#94a3b8;font-size:13px;">$0.00</span></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Grand total -->
+                <tr>
+                  <td style="padding:14px 20px;background:linear-gradient(90deg,rgba(99,102,241,0.15),rgba(168,85,247,0.15));">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td><span style="color:#e2e8f0;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Total Charged</span></td>
+                        <td style="text-align:right;">
+                          <span style="background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;color:#f59e0b;font-size:22px;font-weight:900;">
+                            ${formattedAmount}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          ${trackingId ? `
+          <!-- Transaction ID -->
+          <tr>
+            <td style="padding:20px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:12px;">
+                <tr>
+                  <td style="padding:14px 18px;">
+                    <p style="margin:0 0 3px;color:#475569;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Transaction Reference</p>
+                    <p style="margin:0;color:#67e8f9;font-size:13px;font-family:monospace;word-break:break-all;">${trackingId}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>` : ""}
+
+          <!-- CTA: Download Invoice -->
+          <tr>
+            <td style="padding:32px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <!-- Glow wrapper -->
+                    <table cellpadding="0" cellspacing="0" border="0"
+                      style="background:linear-gradient(135deg,#6366f1,#a855f7,#f59e0b);border-radius:16px;padding:2px;">
+                      <tr>
+                        <td style="border-radius:14px;overflow:hidden;">
+                          <a href="${invoiceUrl}"
+                            style="display:block;padding:16px 48px;
+                                   background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#6366f1 100%);
+                                   color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;
+                                   letter-spacing:0.3px;text-align:center;white-space:nowrap;">
+                            &#x2B07;&nbsp; Download Invoice PDF
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:12px 0 0;color:#475569;font-size:12px;">
+                      Opens your invoice in browser — print or save as PDF
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Bottom gradient bar -->
+          <tr>
+            <td style="height:3px;background:linear-gradient(90deg,#6366f1 0%,#a855f7 50%,#f59e0b 100%);"></td>
+          </tr>
+        </table>
+
+        <!-- ══ FOOTER ════════════════════════════════════════════════════════ -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;margin-top:32px;">
+          <tr>
+            <td align="center" style="padding:0 24px;">
+              <p style="margin:0 0 8px;color:#334155;font-size:12px;line-height:1.6;">
+                Questions about this invoice?
+                <a href="mailto:support@smartlinkpilot.com" style="color:#6366f1;text-decoration:none;">support@smartlinkpilot.com</a>
+              </p>
+              <p style="margin:0;color:#1e293b;font-size:11px;">
+                &copy; ${new Date().getFullYear()} SmartLink Pilot &mdash; Intelligent Link Management
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return {
+    subject: `Your receipt for ${planLabel} — ${invoiceNo}`,
+    html,
+  };
+}
