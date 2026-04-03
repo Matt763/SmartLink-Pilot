@@ -101,7 +101,7 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Mobile toggle — hidden on Capacitor native (bottom nav handles nav there) */}
+              {/* Mobile hamburger — shown on browsers (including mobile); hidden only on native installed app */}
               {!isNative && (
                 <button
                   onClick={() => setMobileOpen(!mobileOpen)}

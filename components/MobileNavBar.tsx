@@ -85,12 +85,15 @@ export default function MobileNavBar() {
   const router = useRouter();
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Only true inside an installed Capacitor shell (Android APK / iOS .ipa).
+    // Returns false in every browser — including Chrome/Safari on mobile.
+    setIsNativeApp(!!(window as any).Capacitor?.isNativePlatform?.());
   }, []);
 
   // Track scroll direction — hide nav on scroll-down, show on scroll-up
@@ -105,20 +108,13 @@ export default function MobileNavBar() {
   }, [lastScrollY]);
 
   useEffect(() => {
+    if (!isNativeApp) return;
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
+  }, [handleScroll, isNativeApp]);
 
-  // Show / hide based on viewport width (mirrors Tailwind `md:hidden`)
-  useEffect(() => {
-    const check = () => setVisible(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check, { passive: true });
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  // Don't render on server, on admin pages, or on wide screens
-  if (!mounted || !visible) return null;
+  // Only render inside a native installed app — never in a browser
+  if (!mounted || !isNativeApp) return null;
   if (pathname?.startsWith("/admin")) return null;
 
   // ── helpers ───────────────────────────────────────────────────────────────
@@ -158,7 +154,6 @@ export default function MobileNavBar() {
     <>
       {/* ── Bottom spacer — prevents content from hiding behind the bar ──── */}
       <div
-        className="block md:hidden"
         style={{ height: "calc(68px + env(safe-area-inset-bottom, 0px))" }}
         aria-hidden="true"
       />
@@ -167,7 +162,7 @@ export default function MobileNavBar() {
       <nav
         role="navigation"
         aria-label="Mobile navigation"
-        className={`fixed bottom-0 left-0 right-0 z-[90] md:hidden transition-transform duration-300 ease-in-out ${
+        className={`fixed bottom-0 left-0 right-0 z-[90] transition-transform duration-300 ease-in-out ${
           hidden ? "translate-y-full" : "translate-y-0"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
