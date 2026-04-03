@@ -15,6 +15,28 @@ const PLAN_CONFIG: Record<string, { amount: number; description: string }> = {
   },
 };
 
+/**
+ * Pesapal currency resolution.
+ *
+ * Pesapal Tanzania accounts have a low USD per-transaction limit.
+ * Set PESAPAL_CURRENCY=TZS and PESAPAL_CURRENCY_RATE=<rate> in env to send
+ * amounts in local currency and stay within the account limit.
+ *
+ * Example .env:
+ *   PESAPAL_CURRENCY=TZS
+ *   PESAPAL_CURRENCY_RATE=2600      ← 1 USD = 2600 TZS
+ *
+ * The invoice and all user-facing prices remain in USD — only the Pesapal
+ * API call uses the converted amount.
+ */
+const PESAPAL_CURRENCY = process.env.PESAPAL_CURRENCY || "USD";
+const PESAPAL_RATE = parseFloat(process.env.PESAPAL_CURRENCY_RATE || "1");
+
+function toPesapalAmount(usdAmount: number): number {
+  // Convert USD → local currency, round to 2 decimal places
+  return Math.round(usdAmount * PESAPAL_RATE * 100) / 100;
+}
+
 const CORRECT_IPN_URL = `${process.env.NEXTAUTH_URL}/api/pesapal/ipn`;
 
 /** Get or register the Pesapal IPN notification ID (cached in DB). */
@@ -79,8 +101,8 @@ export async function POST(req: Request) {
 
     const result = await submitOrder(token, {
       orderId,
-      amount: plan.amount,
-      currency: "USD",
+      amount: toPesapalAmount(plan.amount),
+      currency: PESAPAL_CURRENCY,
       description: plan.description,
       callbackUrl: `${process.env.NEXTAUTH_URL}/api/payment/verify`,
       notificationId,
