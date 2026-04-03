@@ -9,18 +9,31 @@
  * Supports:
  *   • Email / password sign in
  *   • Email / name / password sign up (auto signs in after success)
- *   • Google OAuth (redirects and returns inside the Capacitor WebView)
+ *   • Google OAuth — opened in Capacitor in-app browser (Android Custom Tabs /
+ *     iOS SFSafariViewController).  Shares cookie store with the WebView so the
+ *     session is available immediately when the browser closes.
+ *
+ * Google OAuth flow (native):
+ *   1. Browser.open() → /api/auth/signin/google?callbackUrl=/auth/native-success
+ *   2. User authenticates with Google; NextAuth sets session cookie
+ *   3. NextAuth redirects to /auth/native-success
+ *   4. That page does window.location = "smartlinkpilot://auth-success"
+ *   5. Android closes Custom Tab and fires appUrlOpen in the Capacitor WebView
+ *   6. We call session.update() → AppShell detects session → NativeAuthScreen unmounts
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import {
   Mail, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, Loader2,
   type LucideIcon,
 } from "lucide-react";
 
 type Mode = "signin" | "signup";
+
+/** The production origin used for the Google OAuth URL. */
+const APP_ORIGIN = "https://www.smartlinkpilot.com";
 
 /* ── tiny Google SVG logo ──────────────────────────────────────────────── */
 function GoogleLogo() {
@@ -71,6 +84,7 @@ function Field({
 
 /* ── main component ────────────────────────────────────────────────────── */
 export default function NativeAuthScreen() {
+  const { update }                    = useSession();
   const [mode, setMode]               = useState<Mode>("signin");
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
@@ -79,6 +93,10 @@ export default function NativeAuthScreen() {
   const [loading, setLoading]         = useState(false);
   const [googleLoading, setGoogleLoad] = useState(false);
   const [error, setError]             = useState("");
+
+  // Tracks listener handles so we can remove them after they fire
+  const urlListenerRef     = useRef<{ remove: () => void } | null>(null);
+  const browserListenerRef = useRef<{ remove: () => void } | null>(null);
 
   const clear = () => {
     setError("");
@@ -94,13 +112,28 @@ export default function NativeAuthScreen() {
 
   /* ── sign in ─────────────────────────────────────────────────────────── */
   const handleSignIn = async () => {
-    if (!email.trim() || !password) { setError("Email and password are required."); return; }
+    if (!email.trim() || !password) {
+      setError("Email and password are required.");
+      return;
+    }
     setLoading(true);
     setError("");
-    const res = await signIn("credentials", { email: email.trim(), password, redirect: false });
+
+    const res = await signIn("credentials", {
+      email: email.trim(),
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
+      setError("Incorrect email or password. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    // Explicitly refresh the NextAuth session context so AppShell transitions.
+    await update();
     setLoading(false);
-    if (res?.error) setError("Incorrect email or password. Please try again.");
-    // success → useSession in AppShell updates → NativeAuthScreen unmounts
   };
 
   /* ── sign up ─────────────────────────────────────────────────────────── */
@@ -109,7 +142,10 @@ export default function NativeAuthScreen() {
       setError("Name, email and password are required.");
       return;
     }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -120,23 +156,92 @@ export default function NativeAuthScreen() {
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Sign up failed. Please try again."); setLoading(false); return; }
 
-      // Auto sign in
+      if (!res.ok) {
+        setError(data.error || "Sign up failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Auto sign in after successful registration
       const signInRes = await signIn("credentials", {
-        email: email.trim(), password, redirect: false,
+        email: email.trim(),
+        password,
+        redirect: false,
       });
-      if (signInRes?.error) setError("Account created but sign-in failed. Please sign in manually.");
+
+      if (signInRes?.error) {
+        setError("Account created but sign-in failed. Please sign in manually.");
+        setLoading(false);
+        return;
+      }
+
+      // Refresh session context so AppShell detects the authenticated state
+      await update();
     } catch {
       setError("Network error. Check your connection and try again.");
     }
+
     setLoading(false);
   };
 
-  /* ── Google ──────────────────────────────────────────────────────────── */
+  /* ── Google OAuth (in-app browser) ──────────────────────────────────── */
   const handleGoogle = async () => {
     setGoogleLoad(true);
-    await signIn("google", { callbackUrl: "/" });
+    setError("");
+
+    try {
+      // Dynamic import so this code path only runs in a Capacitor context.
+      // In a regular browser build these modules will not be included.
+      const [{ Browser }, { App }] = await Promise.all([
+        import("@capacitor/browser"),
+        import("@capacitor/app"),
+      ]);
+
+      const callbackUrl = encodeURIComponent("/auth/native-success");
+      const signinUrl   = `${APP_ORIGIN}/api/auth/signin/google?callbackUrl=${callbackUrl}`;
+
+      let resolved = false;
+
+      const finish = async () => {
+        if (resolved) return;
+        resolved = true;
+
+        // Clean up listeners
+        urlListenerRef.current?.remove();
+        browserListenerRef.current?.remove();
+        urlListenerRef.current     = null;
+        browserListenerRef.current = null;
+
+        // Refresh session — if OAuth succeeded the cookie is now in the WebView
+        await update();
+        setGoogleLoad(false);
+      };
+
+      // Primary signal: the native-success page redirects to smartlinkpilot://auth-success
+      // Android closes the Custom Tab and fires appUrlOpen in the WebView.
+      urlListenerRef.current = await App.addListener("appUrlOpen", (event) => {
+        if (event.url.startsWith("smartlinkpilot://auth-success")) {
+          finish();
+        }
+      });
+
+      // Fallback: user manually dismissed the browser — still try to refresh session
+      browserListenerRef.current = await Browser.addListener("browserFinished", finish);
+
+      // Open the OAuth flow in an in-app browser (Custom Tabs on Android,
+      // SFSafariViewController on iOS). The WebView cookie store is shared,
+      // so the NextAuth session cookie set during auth is immediately available.
+      await Browser.open({
+        url: signinUrl,
+        presentationStyle: "popover",
+        toolbarColor: "#080812",
+      });
+    } catch (err) {
+      console.error("[NativeAuthScreen] Google OAuth error:", err);
+      setError("Google sign-in failed. Please try again.");
+      setGoogleLoad(false);
+    }
   };
 
   const isSignUp = mode === "signup";
@@ -273,8 +378,12 @@ export default function NativeAuthScreen() {
           disabled={googleLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 bg-white dark:bg-white text-gray-800 text-[14px] font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-60 shadow-lg shadow-black/20"
         >
-          {googleLoading ? <Loader2 size={18} className="animate-spin text-gray-500" /> : <GoogleLogo />}
-          {googleLoading ? "Opening Google…" : "Continue with Google"}
+          {googleLoading ? (
+            <Loader2 size={18} className="animate-spin text-gray-500" />
+          ) : (
+            <GoogleLogo />
+          )}
+          {googleLoading ? "Waiting for Google…" : "Continue with Google"}
         </button>
       </div>
 
