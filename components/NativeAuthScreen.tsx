@@ -191,12 +191,20 @@ export default function NativeAuthScreen() {
     setError("");
 
     try {
-      // Dynamic import so this code path only runs in a Capacitor context.
-      // In a regular browser build these modules will not be included.
-      const [{ Browser }, { App }] = await Promise.all([
+      // Dynamic import so these modules are only bundled when needed.
+      const [{ Browser }, { App }, { Capacitor }] = await Promise.all([
         import("@capacitor/browser"),
         import("@capacitor/app"),
+        import("@capacitor/core"),
       ]);
+
+      // Guard: if the native Browser plugin is not registered in this APK build,
+      // tell the user to update the app instead of showing a cryptic error.
+      if (!Capacitor.isPluginAvailable("Browser")) {
+        setError("In-app browser unavailable. Please update the app and try again.");
+        setGoogleLoad(false);
+        return;
+      }
 
       const callbackUrl = encodeURIComponent("/auth/native-success");
       const signinUrl   = `${APP_ORIGIN}/api/auth/signin/google?callbackUrl=${callbackUrl}`;
@@ -218,28 +226,30 @@ export default function NativeAuthScreen() {
         setGoogleLoad(false);
       };
 
-      // Primary signal: the native-success page redirects to smartlinkpilot://auth-success
-      // Android closes the Custom Tab and fires appUrlOpen in the WebView.
+      // Primary signal: /auth/native-success redirects to smartlinkpilot://auth-success
+      // Android closes the Custom Tab and fires appUrlOpen back in the WebView.
       urlListenerRef.current = await App.addListener("appUrlOpen", (event) => {
         if (event.url.startsWith("smartlinkpilot://auth-success")) {
           finish();
         }
       });
 
-      // Fallback: user manually dismissed the browser — still try to refresh session
+      // Fallback: if the user manually closes the browser we still try to refresh
       browserListenerRef.current = await Browser.addListener("browserFinished", finish);
 
-      // Open the OAuth flow in an in-app browser (Custom Tabs on Android,
-      // SFSafariViewController on iOS). The WebView cookie store is shared,
-      // so the NextAuth session cookie set during auth is immediately available.
+      // Open the OAuth flow in an in-app browser.
+      // - Android → Chrome Custom Tab (shares cookie store with the WebView)
+      // - iOS     → SFSafariViewController
+      // presentationStyle is iOS-only; toolbarColor works on both.
       await Browser.open({
-        url: signinUrl,
-        presentationStyle: "popover",
+        url:          signinUrl,
         toolbarColor: "#080812",
       });
-    } catch (err) {
-      console.error("[NativeAuthScreen] Google OAuth error:", err);
-      setError("Google sign-in failed. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[NativeAuthScreen] Google OAuth error:", msg);
+      // Show the real error so it can be reported / debugged
+      setError(`Google sign-in failed: ${msg}`);
       setGoogleLoad(false);
     }
   };

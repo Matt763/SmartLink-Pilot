@@ -18,9 +18,110 @@ const SOURCE = 'C:/Users/mattm/Downloads/SmartLink Logo.png';
 
 const input = readFileSync(SOURCE);
 
+// Brand background colour used for the Android launcher icon background layer
+const BRAND_BG = '#3730a3'; // indigo-700 — matches ic_launcher_background in colors.xml
+
 async function resize(size, options = {}) {
   return sharp(input)
     .resize(size, size, { fit: 'cover', ...options })
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Produces a square icon with the brand background colour and the logo
+ * centred at `logoFraction` of the canvas size (default 0.75 = 75%).
+ * Used for ic_launcher.png (legacy Android launcher, no adaptive masking).
+ */
+async function resizeWithBg(canvasSize, logoFraction = 0.75) {
+  const logoSize = Math.round(canvasSize * logoFraction);
+  const offset   = Math.round((canvasSize - logoSize) / 2);
+
+  const logoBuf = await sharp(input)
+    .resize(logoSize, logoSize, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
+    .png()
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width:      canvasSize,
+      height:     canvasSize,
+      channels:   4,
+      background: BRAND_BG,
+    },
+  })
+    .composite([{ input: logoBuf, left: offset, top: offset }])
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Produces a circular icon with brand background.
+ * Used for ic_launcher_round.png.
+ */
+async function resizeCircleWithBg(canvasSize, logoFraction = 0.75) {
+  const logoSize = Math.round(canvasSize * logoFraction);
+  const offset   = Math.round((canvasSize - logoSize) / 2);
+
+  const logoBuf = await sharp(input)
+    .resize(logoSize, logoSize, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
+    .png()
+    .toBuffer();
+
+  // Circular mask
+  const circle = Buffer.from(
+    `<svg width="${canvasSize}" height="${canvasSize}">` +
+    `<circle cx="${canvasSize/2}" cy="${canvasSize/2}" r="${canvasSize/2}"/>` +
+    `</svg>`
+  );
+
+  return sharp({
+    create: {
+      width:      canvasSize,
+      height:     canvasSize,
+      channels:   4,
+      background: BRAND_BG,
+    },
+  })
+    .composite([
+      { input: logoBuf, left: offset, top: offset },
+      { input: circle, blend: 'dest-in' },
+    ])
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Adaptive icon foreground layer.
+ *
+ * Android adaptive icon spec:
+ *   - Full canvas:   108 dp × 108 dp
+ *   - Safe zone:      72 dp × 72 dp  (66.7 % of canvas — content here is NEVER clipped)
+ *   - Bleed zone:     18 dp on each side  (may be clipped by OEM mask)
+ *
+ * We scale the logo to 60 % of the canvas so it sits well within the safe
+ * zone on every OEM shape (circle, squircle, rounded-square, etc.).
+ * The canvas is transparent so the background colour layer shows through.
+ */
+async function resizeForeground(canvasSize) {
+  const LOGO_FRACTION = 0.60;                              // 60 % of canvas
+  const logoSize = Math.round(canvasSize * LOGO_FRACTION);
+  const offset   = Math.round((canvasSize - logoSize) / 2);
+
+  const logoBuf = await sharp(input)
+    .resize(logoSize, logoSize, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
+    .png()
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width:    canvasSize,
+      height:   canvasSize,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }, // transparent canvas
+    },
+  })
+    .composite([{ input: logoBuf, left: offset, top: offset }])
     .png()
     .toBuffer();
 }
@@ -97,15 +198,17 @@ async function main() {
   ];
 
   for (const { dir, size, fgSize } of densities) {
-    const square = await resize(size);
-    const circle = await resizeCircle(size);
+    // ic_launcher.png — legacy launcher (Android < 8):
+    //   brand-colour background + logo centred at 75 % of canvas
+    const square = await resizeWithBg(size, 0.75);
 
-    // Foreground: fill the full adaptive canvas so the logo gradient covers the
-    // shape mask edge-to-edge — no dark background bleed-through at corners.
-    const fg = await sharp(input)
-      .resize(fgSize, fgSize, { fit: 'cover' })
-      .png()
-      .toBuffer();
+    // ic_launcher_round.png — round launcher variant:
+    //   same content clipped to a circle
+    const circle = await resizeCircleWithBg(size, 0.75);
+
+    // ic_launcher_foreground.png — adaptive icon foreground layer:
+    //   transparent canvas, logo at 60 % (safe zone = 72/108 dp ≈ 66.7 %)
+    const fg = await resizeForeground(fgSize);
 
     await save(square, ANDROID_RES, dir, 'ic_launcher.png');
     await save(circle, ANDROID_RES, dir, 'ic_launcher_round.png');
