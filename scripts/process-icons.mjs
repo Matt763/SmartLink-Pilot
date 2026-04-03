@@ -85,25 +85,25 @@ async function main() {
   await save(createIco(png32),  ROOT, 'app', 'favicon.ico');
 
   // ── Android mipmap icons ──────────────────────────────────────────────────
+  // ic_launcher / ic_launcher_round: standard launcher sizes per density
+  // ic_launcher_foreground: adaptive-icon foreground canvas (108dp base × density multiplier)
+  //   mdpi=108, hdpi=162, xhdpi=216, xxhdpi=324, xxxhdpi=432
   const densities = [
-    { dir: 'mipmap-mdpi',    size: 48  },
-    { dir: 'mipmap-hdpi',    size: 72  },
-    { dir: 'mipmap-xhdpi',   size: 96  },
-    { dir: 'mipmap-xxhdpi',  size: 144 },
-    { dir: 'mipmap-xxxhdpi', size: 192 },
+    { dir: 'mipmap-mdpi',    size: 48,  fgSize: 108 },
+    { dir: 'mipmap-hdpi',    size: 72,  fgSize: 162 },
+    { dir: 'mipmap-xhdpi',   size: 96,  fgSize: 216 },
+    { dir: 'mipmap-xxhdpi',  size: 144, fgSize: 324 },
+    { dir: 'mipmap-xxxhdpi', size: 192, fgSize: 432 },
   ];
 
-  for (const { dir, size } of densities) {
+  for (const { dir, size, fgSize } of densities) {
     const square = await resize(size);
     const circle = await resizeCircle(size);
-    // Foreground for adaptive icons: full logo, slightly smaller with padding
-    const fgSize = Math.round(size * 1.5); // 150% — adaptive foreground canvas
+
+    // Foreground: fill the full adaptive canvas so the logo gradient covers the
+    // shape mask edge-to-edge — no dark background bleed-through at corners.
     const fg = await sharp(input)
-      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .extend({ top: Math.round(size * 0.25), bottom: Math.round(size * 0.25),
-                left:  Math.round(size * 0.25), right:  Math.round(size * 0.25),
-                background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .resize(fgSize, fgSize)
+      .resize(fgSize, fgSize, { fit: 'cover' })
       .png()
       .toBuffer();
 

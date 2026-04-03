@@ -8,6 +8,7 @@ import ChatWidget from "./ChatWidget";
 import ClipboardShortener from "./ClipboardShortener";
 import AnalyticsTracker from "./AnalyticsTracker";
 import AdBanner from "./AdBanner";
+import MobileNavBar from "./MobileNavBar";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,6 +28,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       {!isAdminPath && <Footer />}
       {!isAdminPath && <ChatWidget />}
       {!isAdminPath && <ClipboardShortener />}
+      {/* Persistent bottom navigation — mobile & Capacitor app only */}
+      {!isAdminPath && <MobileNavBar />}
     </>
   );
 }

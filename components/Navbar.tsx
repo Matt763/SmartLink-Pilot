@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useState, useEffect } from "react";
@@ -10,6 +11,11 @@ export function Navbar() {
   const { data: session } = useSession();
   const isPro = session?.user?.role === "premium_user" || session?.user?.role === "admin";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    setIsNative(!!(window as any).Capacitor?.isNativePlatform?.());
+  }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -29,9 +35,14 @@ export function Navbar() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2.5 group">
-                <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                </div>
+                <Image
+                  src="/icon-192.png"
+                  alt="SmartLink Pilot"
+                  width={36}
+                  height={36}
+                  className="rounded-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all duration-200"
+                  priority
+                />
                 <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                   Smart<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">Link</span> <span className="text-sm font-bold text-gray-400 dark:text-gray-500">Pilot</span>
                 </span>
@@ -90,21 +101,23 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Mobile toggle */}
-              <button
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-                aria-label="Toggle menu"
-              >
-                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
+              {/* Mobile toggle — hidden on Capacitor native (bottom nav handles nav there) */}
+              {!isNative && (
+                <button
+                  onClick={() => setMobileOpen(!mobileOpen)}
+                  className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                  aria-label="Toggle menu"
+                >
+                  {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+                </button>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Overlay — rendered outside nav to avoid stacking context issues */}
-      {mobileOpen && (
+      {/* Mobile Overlay — hidden on native (bottom nav used instead) */}
+      {mobileOpen && !isNative && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden"
           onClick={() => setMobileOpen(false)}
@@ -112,19 +125,23 @@ export function Navbar() {
         />
       )}
 
-      {/* Mobile Sidebar Drawer — rendered outside nav */}
+      {/* Mobile Sidebar Drawer — hidden on native Capacitor app */}
       <div
         className={`fixed top-0 right-0 h-[100dvh] w-[85vw] max-w-[300px] bg-white dark:bg-gray-950 shadow-2xl border-l border-gray-100 dark:border-gray-800 z-[70] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-y-auto ${
-          mobileOpen ? "translate-x-0" : "translate-x-full"
+          mobileOpen && !isNative ? "translate-x-0" : "translate-x-full"
         }`}
         aria-label="Mobile navigation"
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            </div>
-            <span className="font-bold text-gray-900 dark:text-white">Navigation</span>
+            <Image
+              src="/icon-192.png"
+              alt="SmartLink Pilot"
+              width={32}
+              height={32}
+              className="rounded-lg shadow-md"
+            />
+            <span className="font-bold text-gray-900 dark:text-white">SmartLink Pilot</span>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
