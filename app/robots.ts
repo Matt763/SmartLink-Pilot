@@ -15,7 +15,11 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/"],
       },
     ],
-    sitemap: `${BASE}/sitemap.xml`,
+    // Both the sitemap index (typed sub-sitemaps) and the default Next.js sitemap
+    sitemap: [
+      `${BASE}/sitemap_index.xml`,
+      `${BASE}/sitemap.xml`,
+    ],
     host: BASE,
   };
 }

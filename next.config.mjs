@@ -45,7 +45,10 @@ const nextConfig = {
 
   async rewrites() {
     return [
+      // Dynamic typed sitemaps: post-sitemap1.xml, image-sitemap1.xml, etc.
       { source: '/:sitemap(.*-sitemap.*.xml)', destination: '/api/sitemap/:sitemap' },
+      // IndexNow key file: /{32-char-hex-key}.txt → served from API route
+      { source: '/:key([a-f0-9]{32}).txt', destination: '/api/indexnow' },
     ];
   },
 };

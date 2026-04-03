@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import { compressImage, isImageMime, isVideoMime } from "@/lib/compress";
 import { uploadVideoToCloudinary } from "@/lib/cloudinary";
+import { pingSearchEngines } from "@/lib/sitemap-ping";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB raw — sharp will shrink it
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -62,6 +63,9 @@ export async function POST(req: Request) {
         `[MEDIA_UPLOAD] Image: ${(originalBytes / 1024).toFixed(1)} KB → ${(result.buffer.length / 1024).toFixed(1)} KB`
       );
 
+      // Notify search engines so image sitemap is re-crawled
+      pingSearchEngines([`${process.env.NEXTAUTH_URL ?? "https://www.smartlinkpilot.com"}/uploads/${uniqueFilename}`]);
+
       return NextResponse.json({ url: `/uploads/${uniqueFilename}`, savedKB, type: "image" });
     }
 
@@ -88,6 +92,9 @@ export async function POST(req: Request) {
     console.log(`[MEDIA_UPLOAD] Uploading video (${(originalBytes / 1024 / 1024).toFixed(1)} MB) to Cloudinary…`);
     const videoUrl = await uploadVideoToCloudinary(buffer, file.name);
     console.log(`[MEDIA_UPLOAD] Video ready: ${videoUrl}`);
+
+    // Notify search engines so video sitemap is re-crawled
+    pingSearchEngines([videoUrl]);
 
     return NextResponse.json({ url: videoUrl, savedKB: 0, type: "video" });
   } catch (error: any) {

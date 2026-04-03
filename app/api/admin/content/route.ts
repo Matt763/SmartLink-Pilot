@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { pingSearchEngines } from "@/lib/sitemap-ping";
+
+const SITE_URL = "https://www.smartlinkpilot.com";
+// Map page keys → public URLs so IndexNow knows exactly which page changed
+const PAGE_URL_MAP: Record<string, string> = {
+  home: SITE_URL + "/",
+  features: SITE_URL + "/features",
+  pricing: SITE_URL + "/pricing",
+  about: SITE_URL + "/about",
+  team: SITE_URL + "/team",
+  contact: SITE_URL + "/contact",
+  download: SITE_URL + "/download",
+};
 
 /** GET /api/admin/content?page=about */
 export async function GET(req: Request) {
@@ -31,6 +44,11 @@ export async function POST(req: Request) {
     update: { content },
     create: { page, section, content },
   });
+
+  // Notify search engines of the specific page that changed
+  const pageUrl = PAGE_URL_MAP[page];
+  pingSearchEngines(pageUrl ? [pageUrl] : undefined);
+
   return NextResponse.json({ success: true, entry });
 }
 

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, SENDERS } from "@/lib/resend";
 import { newsletterPostEmailTemplate } from "@/lib/email-templates";
+import { pingSearchEngines } from "@/lib/sitemap-ping";
 
 export async function POST(req: Request) {
   try {
@@ -85,6 +86,11 @@ export async function POST(req: Request) {
       }
     }
 
+    // Ping search engines whenever a post is published or updated
+    if (post.published) {
+      pingSearchEngines([`https://www.smartlinkpilot.com/blog/${post.slug}`]);
+    }
+
     return NextResponse.json(post);
   } catch (error: any) {
     console.log("[BLOG_CREATE]", error);
@@ -122,6 +128,9 @@ export async function DELETE(req: Request) {
     const post = await prisma.blogPost.delete({
       where: { id }
     });
+
+    // Ping so search engines re-crawl the updated sitemap
+    pingSearchEngines();
 
     return NextResponse.json(post);
   } catch (error: any) {

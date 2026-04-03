@@ -23,5 +23,6 @@ Allow: /download/
 # Ads.txt (required for AdSense)
 Allow: /ads.txt
 
-# Sitemap
-Sitemap: https://www.smartlinkpilot.com/main-sitemap.xml
+# Sitemaps
+Sitemap: https://www.smartlinkpilot.com/sitemap_index.xml
+Sitemap: https://www.smartlinkpilot.com/sitemap.xml
