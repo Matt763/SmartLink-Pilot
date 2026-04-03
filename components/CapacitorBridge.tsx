@@ -13,8 +13,9 @@
  *  • Initialise push notifications (via usePushNotifications hook)
  */
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useClipboardMonitor } from '@/hooks/useClipboardMonitor';
 
 function isNative(): boolean {
   return (
@@ -26,6 +27,16 @@ function isNative(): boolean {
 export default function CapacitorBridge() {
   // Sets up FCM token registration and notification listeners
   usePushNotifications();
+
+  // Dispatch a web custom event so ClipboardShortener can show its widget
+  const handleNativeUrlDetected = useCallback((url: string) => {
+    window.dispatchEvent(
+      new CustomEvent('capacitor:url-detected', { detail: { url } })
+    );
+  }, []);
+
+  // Monitors clipboard each time the app comes to the foreground (native only)
+  useClipboardMonitor(handleNativeUrlDetected);
 
   useEffect(() => {
     if (!isNative()) return;

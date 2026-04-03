@@ -60,31 +60,41 @@ export default function ClipboardShortener() {
     }
   }, [lastChecked]);
 
+  const showUrl = useCallback((url: string) => {
+    if (!url || !isValidUrl(url) || url === lastChecked) return;
+    setLastChecked(url);
+    setDetectedUrl(url);
+    setShortened(null);
+    setDismissed(false);
+    setCopied(false);
+    setShowQr(false);
+    clearTimeout(dismissTimer.current);
+    dismissTimer.current = setTimeout(() => setDismissed(true), 30000);
+  }, [lastChecked]);
+
   useEffect(() => {
     const onFocus = () => checkClipboard();
     const onVisibilityChange = () => {
       if (!document.hidden) checkClipboard();
     };
 
+    // Native Capacitor: fired by CapacitorBridge when clipboard URL is detected
+    // or when the user taps "Shorten Now" on a local notification
+    const onNativeUrlDetected = (e: Event) => {
+      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      if (url) showUrl(url);
+    };
+
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("capacitor:url-detected", onNativeUrlDetected);
 
     // Tauri native global clipboard listener
     let unlistenTauri: (() => void) | undefined;
     if (typeof window !== "undefined" && (window as any).__TAURI__) {
       (window as any).__TAURI__.event.listen("new-url-copied", (event: any) => {
         const url = event.payload;
-        if (url && isValidUrl(url)) {
-          setDetectedUrl(url);
-          setShortened(null);
-          setDismissed(false);
-          setCopied(false);
-          setShowQr(false);
-          setLastChecked(url);
-          // Keep it open longer since they didn't explicitly focus the exact window
-          clearTimeout(dismissTimer.current);
-          dismissTimer.current = setTimeout(() => setDismissed(true), 30000);
-        }
+        if (url && isValidUrl(url)) showUrl(url);
       }).then((unlisten: () => void) => {
         unlistenTauri = unlisten;
       }).catch(console.error);
@@ -93,10 +103,11 @@ export default function ClipboardShortener() {
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("capacitor:url-detected", onNativeUrlDetected);
       clearTimeout(dismissTimer.current);
       if (unlistenTauri) unlistenTauri();
     };
-  }, [checkClipboard]);
+  }, [checkClipboard, showUrl]);
 
   const handleShorten = async () => {
     if (!detectedUrl || loading) return;

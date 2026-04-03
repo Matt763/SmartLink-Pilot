@@ -44,11 +44,17 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icon-192.png",      sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png",      sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
     shortcut: "/favicon-32x32.png",
+    other: [
+      // Tells browsers / search engines the canonical logo
+      { rel: "logo", url: "/icon-512.png" },
+    ],
   },
   manifest: "/manifest.json",
   openGraph: {
@@ -93,9 +99,14 @@ export default function RootLayout({
         "url": BASE_URL,
         "logo": {
           "@type": "ImageObject",
+          "@id": `${BASE_URL}/#logo`,
           "url": `${BASE_URL}/icon-512.png`,
           "width": 512,
           "height": 512,
+          "caption": "SmartLink Pilot",
+        },
+        "image": {
+          "@id": `${BASE_URL}/#logo`,
         },
         "sameAs": [
           "https://twitter.com/smartlinkpilot",
@@ -151,6 +162,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <meta name="theme-color" content="#4f46e5" />
         <meta name="msapplication-TileColor" content="#4f46e5" />
+        {/* Explicit logo hints for search engines (Google, Bing) */}
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         {/* ── Google AdSense ──────────────────────────────────────────── */}
         <script
           async
