@@ -47,7 +47,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            applicationIdSuffix ".debug"
+            // No applicationIdSuffix — keeps the same package name as release
+            // so google-services.json (which registers com.mayobebros.smartlinkpilot)
+            // matches both debug and release builds.
             versionNameSuffix "-debug"
         }
     }
