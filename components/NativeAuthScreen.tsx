@@ -27,7 +27,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import {
-  Mail, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, Loader2,
+  Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle, ArrowRight, Loader2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -87,6 +87,7 @@ export default function NativeAuthScreen() {
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
   const [name, setName]               = useState("");
+  const [phone, setPhone]             = useState("");
   const [showPass, setShowPass]       = useState(false);
   const [loading, setLoading]         = useState(false);
   const [googleLoading, setGoogleLoad] = useState(false);
@@ -97,6 +98,7 @@ export default function NativeAuthScreen() {
     setEmail("");
     setPassword("");
     setName("");
+    setPhone("");
   };
 
   const switchMode = (m: Mode) => {
@@ -136,6 +138,10 @@ export default function NativeAuthScreen() {
       setError("Name, email and password are required.");
       return;
     }
+    if (!phone.trim()) {
+      setError("Recovery phone number is required.");
+      return;
+    }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
@@ -147,7 +153,7 @@ export default function NativeAuthScreen() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password, secretPhone: phone.trim() }),
       });
       const data = await res.json();
 
@@ -191,7 +197,7 @@ export default function NativeAuthScreen() {
       // Initialize with the Web OAuth client ID so Google returns a verifiable idToken.
       // This is the same client ID used by the web OAuth provider.
       await GoogleAuth.initialize({
-        clientId: "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com",
+        clientId: "196687704635-ujdmp8dskt9mecd7gb2rv6gcr252ekf2.apps.googleusercontent.com",
         scopes: ["profile", "email"],
         grantOfflineAccess: false,
       });
@@ -293,6 +299,16 @@ export default function NativeAuthScreen() {
             placeholder="Full name"
             value={name}
             onChange={setName}
+          />
+        )}
+
+        {isSignUp && (
+          <Field
+            icon={Phone}
+            type="tel"
+            placeholder="Recovery phone (+1 234 567 8900)"
+            value={phone}
+            onChange={setPhone}
           />
         )}
 
