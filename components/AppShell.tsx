@@ -21,7 +21,7 @@
  * account actions, theme selection, legal links, etc.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -52,8 +52,21 @@ import {
   Sparkles,
   LayoutList,
   Cookie,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
+
+/* ── AndroidBridge type — injected by MainActivity.java ──────────────────── */
+declare global {
+  interface Window {
+    AndroidBridge?: {
+      checkOverlayEnabled(): string;   // "true" | "false"
+      canDrawOverlays(): string;       // "true" | "false"
+      enableOverlay(): void;
+      disableOverlay(): void;
+    };
+  }
+}
 
 /* ─────────────────────────────────────── types ──────────────────────────── */
 
@@ -154,7 +167,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router     = useRouter();
   const { data: session, status, update } = useSession();
   const { theme, setTheme } = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]         = useState(false);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [hasAndroidBridge, setHasAndroidBridge] = useState(false);
+
+  // ── Overlay permission state ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!window.AndroidBridge) return;
+    setHasAndroidBridge(true);
+    setOverlayEnabled(window.AndroidBridge.checkOverlayEnabled() === "true");
+
+    // Listen for the result when user returns from Android overlay settings
+    const onPermissionChanged = (e: Event) => {
+      const enabled = (e as CustomEvent<{ enabled: boolean }>).detail.enabled;
+      setOverlayEnabled(enabled);
+    };
+    window.addEventListener("overlay-permission-changed", onPermissionChanged);
+    return () => window.removeEventListener("overlay-permission-changed", onPermissionChanged);
+  }, []);
+
+  const handleOverlayToggle = useCallback(() => {
+    if (!window.AndroidBridge) return;
+    if (overlayEnabled) {
+      window.AndroidBridge.disableOverlay();
+      setOverlayEnabled(false);
+    } else {
+      // enableOverlay() will open system settings if permission not yet granted;
+      // the 'overlay-permission-changed' event will update state on return.
+      window.AndroidBridge.enableOverlay();
+    }
+  }, [overlayEnabled]);
 
   const isPro =
     session?.user?.role === "premium_user" ||
@@ -553,6 +595,52 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 <ChevronRight size={16} className="text-white/60" />
               </button>
+            )}
+
+            {/* ── Permissions (Android only) ─────────────────────────── */}
+            {hasAndroidBridge && (
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5 px-1">
+                  Permissions
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-900/80 rounded-2xl overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3.5">
+                    <Layers
+                      size={17}
+                      className="text-gray-500 dark:text-gray-400 flex-shrink-0"
+                      strokeWidth={1.75}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-medium text-gray-800 dark:text-gray-200 leading-tight">
+                        Appear on top of other apps
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-snug">
+                        {overlayEnabled
+                          ? "URL bubble is active — shows over other apps"
+                          : "Shows a shortcut bubble when a URL is copied"}
+                      </p>
+                    </div>
+                    {/* Toggle switch */}
+                    <button
+                      role="switch"
+                      aria-checked={overlayEnabled}
+                      aria-label="Appear on top of other apps"
+                      onClick={handleOverlayToggle}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                        overlayEnabled
+                          ? "bg-indigo-600"
+                          : "bg-gray-300 dark:bg-gray-700"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                          overlayEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* ── Navigation sections ────────────────────────────────── */}
