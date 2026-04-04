@@ -196,8 +196,12 @@ export default function NativeAuthScreen() {
 
       // Initialize with the Web OAuth client ID so Google returns a verifiable idToken.
       // This is the same client ID used by the web OAuth provider.
+      // clientId must be the WEB OAuth 2.0 client ID so Google returns an
+      // idToken whose audience matches GOOGLE_CLIENT_ID on the server.
+      // The Android client ID (installed type) goes in google-services.json,
+      // NOT here — passing it here causes audience mismatch and auth failure.
       await GoogleAuth.initialize({
-        clientId: "196687704635-ujdmp8dskt9mecd7gb2rv6gcr252ekf2.apps.googleusercontent.com",
+        clientId: "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com",
         scopes: ["profile", "email"],
         grantOfflineAccess: false,
       });
