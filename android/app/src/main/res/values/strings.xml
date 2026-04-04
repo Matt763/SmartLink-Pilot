@@ -4,4 +4,6 @@
     <string name="title_activity_main">SmartLink Pilot</string>
     <string name="package_name">com.mayobebros.smartlinkpilot</string>
     <string name="custom_url_scheme">com.mayobebros.smartlinkpilot</string>
+    <string name="server_client_id" translatable="false">497304910795-t0303p4hi560nfjiomuvelao2qv1abrp.apps.googleusercontent.com</string>
+    <string name="default_web_client_id" translatable="false">497304910795-t0303p4hi560nfjiomuvelao2qv1abrp.apps.googleusercontent.com</string>
 </resources>

@@ -53,7 +53,8 @@ const config: CapacitorConfig = {
     // Web OAuth 2.0 client ID so the server can verify the returned idToken.
     GoogleAuth: {
       scopes: ['profile', 'email'],
-      serverClientId: process.env.GOOGLE_CLIENT_ID || '',
+      // Using the primary Web Client ID from google-services.json
+      serverClientId: '497304910795-t0303p4hi560nfjiomuvelao2qv1abrp.apps.googleusercontent.com',
       forceCodeForRefreshToken: false,
     },
   },

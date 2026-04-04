@@ -27,7 +27,7 @@ type Mode = "signin" | "signup";
 // Web OAuth 2.0 client ID — must match GOOGLE_CLIENT_ID env var on the server
 // so the idToken audience passes validation in lib/auth.ts.
 const WEB_CLIENT_ID =
-  "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com";
+  "497304910795-t0303p4hi560nfjiomuvelao2qv1abrp.apps.googleusercontent.com";
 
 /* ── tiny Google SVG logo ──────────────────────────────────────────────── */
 function GoogleLogo() {
@@ -72,12 +72,18 @@ function googleErrorMessage(raw: string): string | null {
   // User cancelled — not an error at all
   if (raw.includes("12501") || raw.toLowerCase().includes("cancel")) return null;
 
-  // Known error codes
-  if (raw.includes("10"))    return "Google Sign-In is not configured correctly on this device. Please use email sign-in.";
-  if (raw.includes("12500")) return "Google Sign-In failed. Please try again or use email sign-in.";
-  if (raw.includes("7"))     return "No internet connection. Please check your network and try again.";
-  if (raw.includes("8"))     return "A client error occurred. Please restart the app and try again.";
-  if (raw.includes("16"))    return "An internal error occurred. Please try again.";
+  // Extract a numeric code from the error string for precise matching.
+  // Google Sign-In errors surface as "statusCode: 10" or just the number.
+  const codeMatch = raw.match(/\b(12500|12502|10|16|7|8)\b/);
+  const code = codeMatch ? codeMatch[1] : null;
+
+  if (code === "12501")  return null; // cancelled — caught above, safety net
+  if (code === "10")     return "Google Sign-In is not configured correctly (error 10). Please use email sign-in.";
+  if (code === "12500")  return "Google Sign-In failed. Please try again or use email sign-in.";
+  if (code === "12502")  return "Another sign-in is already in progress. Please wait and try again.";
+  if (code === "7")      return "No internet connection. Please check your network and try again.";
+  if (code === "8")      return "A client error occurred. Please restart the app and try again.";
+  if (code === "16")     return "An internal error occurred. Please try again.";
 
   return "Google Sign-In failed. Please try again or use email sign-in.";
 }
@@ -236,7 +242,7 @@ export default function NativeAuthScreen() {
         // User cancelled — silent exit
         return;
       }
-      console.error("[NativeAuthScreen] Google Sign-In error:", raw);
+      console.error("[NativeAuthScreen] Google Sign-In error (raw):", raw);
       setError(msg);
     } finally {
       setGoogleLoad(false);
