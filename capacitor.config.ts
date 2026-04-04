@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appId: 'com.mayobebros.smartlinkpilot',
   appName: 'SmartLink Pilot',
   webDir: 'out',
-  bundledWebRuntime: false,
   server: {
     url: 'https://www.smartlinkpilot.com',
     cleartext: false,
@@ -48,9 +47,7 @@ const config: CapacitorConfig = {
       style: 'dark',
       resizeOnFullScreen: true,
     },
-    App: {
-      launchUrl: 'https://www.smartlinkpilot.com',
-    },
+    App: {},
     // Native Google Sign-In — uses the Android Google Sign-In SDK,
     // no browser or Custom Tab required.  serverClientId must be the
     // Web OAuth 2.0 client ID so the server can verify the returned idToken.
