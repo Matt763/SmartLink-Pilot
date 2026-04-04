@@ -28,6 +28,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "./ThemeProvider";
 import NativeAuthScreen from "./NativeAuthScreen";
 import AvatarPicker from "./AvatarPicker";
+import TermsAcceptanceScreen, { hasAcceptedTerms, saveTermsAcceptance } from "./TermsAcceptanceScreen";
 import {
   House,
   Link2,
@@ -167,12 +168,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router     = useRouter();
   const { data: session, status, update } = useSession();
   const { theme, setTheme } = useTheme();
-  const [menuOpen, setMenuOpen]         = useState(false);
-  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [menuOpen, setMenuOpen]                 = useState(false);
+  const [overlayEnabled, setOverlayEnabled]     = useState(false);
   const [hasAndroidBridge, setHasAndroidBridge] = useState(false);
+  const [termsAccepted, setTermsAccepted]       = useState<boolean | null>(null);
 
-  // ── Overlay permission state ──────────────────────────────────────────────
+  // ── Terms acceptance + overlay permission state (both checked on mount) ───
   useEffect(() => {
+    // Terms — read from localStorage once
+    setTermsAccepted(hasAcceptedTerms());
+
     if (!window.AndroidBridge) return;
     setHasAndroidBridge(true);
     setOverlayEnabled(window.AndroidBridge.checkOverlayEnabled() === "true");
@@ -263,6 +268,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Not signed in → show native auth screen
   if (status === "unauthenticated") {
     return <NativeAuthScreen />;
+  }
+
+  // Signed in — wait for localStorage check before deciding
+  if (termsAccepted === null) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#080812]" />
+    );
+  }
+
+  // Terms not yet accepted → show acceptance screen
+  if (!termsAccepted) {
+    return (
+      <TermsAcceptanceScreen
+        onAccept={() => {
+          saveTermsAcceptance();
+          setTermsAccepted(true);
+        }}
+      />
+    );
   }
 
   // Signed in but no avatar yet → avatar picker (skip for Google users who already have an image)

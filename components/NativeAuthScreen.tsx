@@ -6,24 +6,15 @@
  * Shown by AppShell when Capacitor.isNativePlatform() === true AND the user
  * has no active session.  No navigation bars or chrome — just auth.
  *
- * Supports:
- *   • Email / password sign in
- *   • Email / name / password sign up (auto signs in after success)
- *   • Google Sign-In — uses the native Android/iOS Google Sign-In SDK via
- *     @codetrix-studio/capacitor-google-auth.  Shows a native account picker
- *     sheet with no browser, no Custom Tab, no redirect — entirely in-app.
- *
- * Native Google Sign-In flow:
- *   1. GoogleAuth.signIn() → native OS account picker sheet appears
- *   2. User taps their Google account
- *   3. Plugin returns { authentication: { idToken } }
- *   4. We POST the idToken to NextAuth "google-native" credentials provider
- *   5. Server verifies the token with Google's tokeninfo API
- *   6. NextAuth sets a session cookie in the WebView
- *   7. session.update() → AppShell detects session → screen unmounts
+ * Google Sign-In flow:
+ *   1. GoogleAuth is initialized ONCE on mount (not per-button-press).
+ *      Re-initializing the Google Sign-In SDK on every tap was the root
+ *      cause of "google sign-in failed" errors.
+ *   2. handleGoogle() calls GoogleAuth.signIn() — shows native account picker.
+ *   3. idToken is verified server-side via the "google-native" NextAuth provider.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import {
@@ -32,6 +23,11 @@ import {
 } from "lucide-react";
 
 type Mode = "signin" | "signup";
+
+// Web OAuth 2.0 client ID — must match GOOGLE_CLIENT_ID env var on the server
+// so the idToken audience passes validation in lib/auth.ts.
+const WEB_CLIENT_ID =
+  "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com";
 
 /* ── tiny Google SVG logo ──────────────────────────────────────────────── */
 function GoogleLogo() {
@@ -47,19 +43,10 @@ function GoogleLogo() {
 
 /* ── field wrapper ─────────────────────────────────────────────────────── */
 function Field({
-  icon: Icon,
-  type,
-  placeholder,
-  value,
-  onChange,
-  right,
+  icon: Icon, type, placeholder, value, onChange, right,
 }: {
-  icon: LucideIcon;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  right?: React.ReactNode;
+  icon: LucideIcon; type: string; placeholder: string;
+  value: string; onChange: (v: string) => void; right?: React.ReactNode;
 }) {
   return (
     <div className="relative">
@@ -73,61 +60,89 @@ function Field({
         autoCorrect="off"
         className="w-full bg-white/8 dark:bg-white/5 border border-white/12 dark:border-white/10 rounded-2xl pl-11 pr-12 py-4 text-[15px] text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/70 focus:bg-white/10 transition-all"
       />
-      {right && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">{right}</div>
-      )}
+      {right && <div className="absolute right-3 top-1/2 -translate-y-1/2">{right}</div>}
     </div>
   );
 }
 
+/* ── helpers ───────────────────────────────────────────────────────────── */
+
+/** Map Google Sign-In error codes to user-friendly messages. */
+function googleErrorMessage(raw: string): string | null {
+  // User cancelled — not an error at all
+  if (raw.includes("12501") || raw.toLowerCase().includes("cancel")) return null;
+
+  // Known error codes
+  if (raw.includes("10"))    return "Google Sign-In is not configured correctly on this device. Please use email sign-in.";
+  if (raw.includes("12500")) return "Google Sign-In failed. Please try again or use email sign-in.";
+  if (raw.includes("7"))     return "No internet connection. Please check your network and try again.";
+  if (raw.includes("8"))     return "A client error occurred. Please restart the app and try again.";
+  if (raw.includes("16"))    return "An internal error occurred. Please try again.";
+
+  return "Google Sign-In failed. Please try again or use email sign-in.";
+}
+
 /* ── main component ────────────────────────────────────────────────────── */
 export default function NativeAuthScreen() {
-  const { update }                    = useSession();
-  const [mode, setMode]               = useState<Mode>("signin");
-  const [email, setEmail]             = useState("");
-  const [password, setPassword]       = useState("");
-  const [name, setName]               = useState("");
-  const [phone, setPhone]             = useState("");
-  const [showPass, setShowPass]       = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [googleLoading, setGoogleLoad] = useState(false);
-  const [error, setError]             = useState("");
+  const { update }                      = useSession();
+  const [mode, setMode]                 = useState<Mode>("signin");
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
+  const [name, setName]                 = useState("");
+  const [phone, setPhone]               = useState("");
+  const [showPass, setShowPass]         = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [googleLoading, setGoogleLoad]  = useState(false);
+  const [error, setError]               = useState("");
+
+  // Track whether GoogleAuth has been initialised so we never call it twice
+  const googleInitialized = useRef(false);
+
+  /* ── Initialise GoogleAuth once on mount (not per button press) ──────── */
+  useEffect(() => {
+    if (googleInitialized.current) return;
+
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;
+
+        const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
+        await GoogleAuth.initialize({
+          // Must be the WEB client ID — this becomes the idToken audience so
+          // the server's GOOGLE_CLIENT_ID validation in lib/auth.ts passes.
+          clientId: WEB_CLIENT_ID,
+          scopes: ["profile", "email"],
+          grantOfflineAccess: false,
+        });
+        googleInitialized.current = true;
+      } catch (e) {
+        console.error("[NativeAuthScreen] GoogleAuth.initialize failed:", e);
+      }
+    })();
+  }, []);
 
   const clear = () => {
-    setError("");
-    setEmail("");
-    setPassword("");
-    setName("");
-    setPhone("");
+    setError(""); setEmail(""); setPassword(""); setName(""); setPhone("");
   };
 
-  const switchMode = (m: Mode) => {
-    clear();
-    setMode(m);
-  };
+  const switchMode = (m: Mode) => { clear(); setMode(m); };
 
   /* ── sign in ─────────────────────────────────────────────────────────── */
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
-      setError("Email and password are required.");
-      return;
+      setError("Email and password are required."); return;
     }
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
 
     const res = await signIn("credentials", {
-      email: email.trim(),
-      password,
-      redirect: false,
+      email: email.trim(), password, redirect: false,
     });
 
     if (res?.error) {
       setError("Incorrect email or password. Please try again.");
-      setLoading(false);
-      return;
+      setLoading(false); return;
     }
-
-    // Explicitly refresh the NextAuth session context so AppShell transitions.
     await update();
     setLoading(false);
   };
@@ -135,109 +150,94 @@ export default function NativeAuthScreen() {
   /* ── sign up ─────────────────────────────────────────────────────────── */
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password) {
-      setError("Name, email and password are required.");
-      return;
+      setError("Name, email and password are required."); return;
     }
     if (!phone.trim()) {
-      setError("Recovery phone number is required.");
-      return;
+      setError("Recovery phone number is required."); return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
+      setError("Password must be at least 6 characters."); return;
     }
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
 
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), password, secretPhone: phone.trim() }),
+        body: JSON.stringify({
+          name: name.trim(), email: email.trim(),
+          password, secretPhone: phone.trim(),
+        }),
       });
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.error || "Sign up failed. Please try again.");
-        setLoading(false);
-        return;
+        setLoading(false); return;
       }
 
-      // Auto sign in after successful registration
       const signInRes = await signIn("credentials", {
-        email: email.trim(),
-        password,
-        redirect: false,
+        email: email.trim(), password, redirect: false,
       });
 
       if (signInRes?.error) {
         setError("Account created but sign-in failed. Please sign in manually.");
-        setLoading(false);
-        return;
+        setLoading(false); return;
       }
 
-      // Refresh session context so AppShell detects the authenticated state
       await update();
     } catch {
       setError("Network error. Check your connection and try again.");
     }
-
     setLoading(false);
   };
 
-  /* ── Native Google Sign-In (no browser, no Custom Tab) ─────────────── */
+  /* ── Native Google Sign-In ───────────────────────────────────────────── */
   const handleGoogle = async () => {
-    setGoogleLoad(true);
-    setError("");
+    setGoogleLoad(true); setError("");
 
     try {
-      // Dynamic import — only included in the native bundle, not the web build.
       const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
 
-      // Initialize with the Web OAuth client ID so Google returns a verifiable idToken.
-      // This is the same client ID used by the web OAuth provider.
-      // clientId must be the WEB OAuth 2.0 client ID so Google returns an
-      // idToken whose audience matches GOOGLE_CLIENT_ID on the server.
-      // The Android client ID (installed type) goes in google-services.json,
-      // NOT here — passing it here causes audience mismatch and auth failure.
-      await GoogleAuth.initialize({
-        clientId: "196687704635-ujrfq3qlnmdran11a9hk2t1j79p3dpjb.apps.googleusercontent.com",
-        scopes: ["profile", "email"],
-        grantOfflineAccess: false,
-      });
+      // If initialization failed at mount (e.g. app was cold-started with no
+      // internet), attempt it once more now before signing in.
+      if (!googleInitialized.current) {
+        await GoogleAuth.initialize({
+          clientId: WEB_CLIENT_ID,
+          scopes: ["profile", "email"],
+          grantOfflineAccess: false,
+        });
+        googleInitialized.current = true;
+      }
 
-      // Shows the native Android account picker / iOS consent sheet.
-      // No browser, no redirect, fully inside the app.
+      // Shows the native Android account picker — no browser, no redirect.
       const googleUser = await GoogleAuth.signIn();
       const idToken = googleUser?.authentication?.idToken;
 
       if (!idToken) {
-        setError("Google sign-in did not return a token. Please try again.");
-        setGoogleLoad(false);
+        setError("Google Sign-In did not return a token. Please try again.");
         return;
       }
 
-      // Exchange the idToken for a NextAuth session via the google-native
-      // credentials provider (server verifies with Google's tokeninfo API).
+      // Exchange idToken for a NextAuth session via the google-native provider.
       const res = await signIn("google-native", { idToken, redirect: false });
 
       if (res?.error) {
-        setError("Google sign-in failed. Please try again.");
-        setGoogleLoad(false);
+        // NextAuth server-side verification failed
+        setError("Google Sign-In was rejected by the server. Please try again.");
         return;
       }
 
-      // Refresh session context so AppShell transitions immediately.
       await update();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // User cancelled the account picker — not a real error
-      if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("12501")) {
-        setGoogleLoad(false);
+      const raw = err instanceof Error ? err.message : String(err);
+      const msg = googleErrorMessage(raw);
+      if (msg === null) {
+        // User cancelled — silent exit
         return;
       }
-      console.error("[NativeAuthScreen] Google Sign-In error:", msg);
-      setError("Google sign-in failed. Please check your connection and try again.");
+      console.error("[NativeAuthScreen] Google Sign-In error:", raw);
+      setError(msg);
     } finally {
       setGoogleLoad(false);
     }
@@ -250,22 +250,18 @@ export default function NativeAuthScreen() {
       className="fixed inset-0 flex flex-col bg-[#080812] overflow-y-auto"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      {/* ── Gradient backdrop ──────────────────────────────────────────── */}
+      {/* Gradient backdrop */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-700/15 rounded-full blur-[80px]" />
       </div>
 
-      {/* ── Logo / hero ────────────────────────────────────────────────── */}
+      {/* Logo / hero */}
       <div className="relative flex flex-col items-center pt-14 pb-8 px-6">
         <div className="relative mb-4">
           <Image
-            src="/icon-512.png"
-            alt="SmartLink Pilot"
-            width={72}
-            height={72}
-            className="rounded-[22px] shadow-2xl shadow-indigo-500/40"
-            priority
+            src="/icon-512.png" alt="SmartLink Pilot" width={72} height={72}
+            className="rounded-[22px] shadow-2xl shadow-indigo-500/40" priority
           />
           <div className="absolute inset-0 rounded-[22px] ring-2 ring-white/10" />
         </div>
@@ -275,13 +271,12 @@ export default function NativeAuthScreen() {
         <p className="text-[13px] text-gray-400 mt-1 tracking-wide">Shorten. Track. Grow.</p>
       </div>
 
-      {/* ── Tab switcher ──────────────────────────────────────────────── */}
+      {/* Tab switcher */}
       <div className="relative px-6 mb-6">
         <div className="flex bg-white/6 rounded-2xl p-1">
           {(["signin", "signup"] as Mode[]).map((m) => (
             <button
-              key={m}
-              onClick={() => switchMode(m)}
+              key={m} onClick={() => switchMode(m)}
               className={`flex-1 py-2.5 text-[14px] font-bold rounded-xl transition-all duration-200 ${
                 mode === m
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30"
@@ -294,35 +289,16 @@ export default function NativeAuthScreen() {
         </div>
       </div>
 
-      {/* ── Form ───────────────────────────────────────────────────────── */}
+      {/* Form */}
       <div className="relative flex-1 px-6 space-y-3">
         {isSignUp && (
-          <Field
-            icon={User}
-            type="text"
-            placeholder="Full name"
-            value={name}
-            onChange={setName}
-          />
+          <Field icon={User} type="text" placeholder="Full name" value={name} onChange={setName} />
         )}
-
         {isSignUp && (
-          <Field
-            icon={Phone}
-            type="tel"
-            placeholder="Recovery phone (+1 234 567 8900)"
-            value={phone}
-            onChange={setPhone}
-          />
+          <Field icon={Phone} type="tel" placeholder="Recovery phone (+1 234 567 8900)" value={phone} onChange={setPhone} />
         )}
 
-        <Field
-          icon={Mail}
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={setEmail}
-        />
+        <Field icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} />
 
         <Field
           icon={Lock}
@@ -341,7 +317,6 @@ export default function NativeAuthScreen() {
           }
         />
 
-        {/* Error */}
         {error && (
           <div className="flex items-start gap-2.5 bg-red-500/12 border border-red-500/30 rounded-xl px-4 py-3">
             <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
@@ -349,7 +324,6 @@ export default function NativeAuthScreen() {
           </div>
         )}
 
-        {/* Forgot password (sign in only) */}
         {!isSignUp && (
           <div className="text-right">
             <a href="/forgot-password" className="text-[13px] text-indigo-400 hover:text-indigo-300 transition-colors">
@@ -358,45 +332,33 @@ export default function NativeAuthScreen() {
           </div>
         )}
 
-        {/* Primary action button */}
         <button
           onClick={isSignUp ? handleSignUp : handleSignIn}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2.5 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-[15px] font-bold rounded-2xl shadow-lg shadow-indigo-500/35 active:scale-[0.98] transition-all disabled:opacity-60 mt-1"
         >
-          {loading ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <>
-              {isSignUp ? "Create Account" : "Sign In"}
-              <ArrowRight size={17} />
-            </>
+          {loading ? <Loader2 size={18} className="animate-spin" /> : (
+            <>{isSignUp ? "Create Account" : "Sign In"}<ArrowRight size={17} /></>
           )}
         </button>
 
-        {/* Divider */}
         <div className="flex items-center gap-3 py-1">
           <div className="flex-1 h-px bg-white/10" />
           <span className="text-[12px] text-gray-500 font-medium">or continue with</span>
           <div className="flex-1 h-px bg-white/10" />
         </div>
 
-        {/* Google button */}
         <button
           onClick={handleGoogle}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white dark:bg-white text-gray-800 text-[14px] font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-60 shadow-lg shadow-black/20"
+          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white text-gray-800 text-[14px] font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-60 shadow-lg shadow-black/20"
         >
-          {googleLoading ? (
-            <Loader2 size={18} className="animate-spin text-gray-500" />
-          ) : (
-            <GoogleLogo />
-          )}
+          {googleLoading ? <Loader2 size={18} className="animate-spin text-gray-500" /> : <GoogleLogo />}
           {googleLoading ? "Signing in…" : "Continue with Google"}
         </button>
       </div>
 
-      {/* ── Legal footer ───────────────────────────────────────────────── */}
+      {/* Legal footer */}
       <div
         className="relative px-6 pt-6 pb-8 text-center"
         style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}

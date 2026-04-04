@@ -14,6 +14,10 @@ export default function CookieConsent() {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
+    // Never show inside the native Android/iOS app — consent is collected
+    // via TermsAcceptanceScreen on first launch instead.
+    if ((window as any).Capacitor?.isNativePlatform?.()) return;
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {

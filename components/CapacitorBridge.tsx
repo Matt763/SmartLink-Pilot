@@ -54,6 +54,20 @@ export default function CapacitorBridge() {
         await new Promise(r => setTimeout(r, 400));
         await SplashScreen.hide({ fadeOutDuration: 400 });
 
+        // ── Service Worker — cache-first for static assets, SWR for pages ───────
+        // Registered only inside the native app so it never interferes with
+        // the public website's caching behaviour.
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker
+            .register("/sw.js", { updateViaCache: "none" })
+            .then((reg) => {
+              console.log("[SW] Registered, scope:", reg.scope);
+              // Check for updates immediately so background refreshes happen
+              reg.update().catch(() => {});
+            })
+            .catch((err) => console.warn("[SW] Registration failed:", err));
+        }
+
         // ── Local Notification Channels (Android 8+ requirement) ──────────────
         const { LocalNotifications } = await import('@capacitor/local-notifications');
 
